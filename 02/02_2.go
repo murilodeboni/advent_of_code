@@ -37,8 +37,35 @@ func multiplyNumbers(a []int64, n1 int64, n2 int64, index int64) []int64 {
 	return deleteAndInsert(a, index, value)
 }
 
-func read() []int64 {
-	f, err := os.Open("input.txt")
+func checkThis(a []int64, i int64, j int64) bool {
+	tmp := make([]int64, len(a))
+	copy(tmp, a)
+	tmp = deleteAndInsert(tmp, 1, i)
+	tmp = deleteAndInsert(tmp, 2, j)
+	var n int = 0
+	for n < len(tmp) {
+		if n+1 < len(a) && n+2 < len(a) && tmp[n+1] < int64(len(a)) && tmp[n+2] < int64(len(a)) && tmp[n+3] < int64(len(a)) {
+			switch tmp[n] {
+			case 1:
+				tmp = addNumbers(tmp, tmp[tmp[n+1]], tmp[tmp[n+2]], tmp[n+3])
+			case 2:
+				tmp = multiplyNumbers(tmp, tmp[tmp[n+1]], tmp[tmp[n+2]], tmp[n+3])
+			case 99:
+				n = len(a)
+			}
+		}
+		n = n + 4
+	}
+	if tmp[0] == 19690720 {
+		fmt.Println(i*100 + j)
+		return true
+	} else {
+		return false
+	}
+}
+
+func readInput(inp string) []int64 {
+	f, err := os.Open(inp)
 
 	if err != nil {
 		log.Fatal(err)
@@ -49,7 +76,7 @@ func read() []int64 {
 	scanner := bufio.NewScanner(f)
 
 	var s []string
-	var a []int64
+	var ar []int64
 
 	// read input as strings
 	for scanner.Scan() {
@@ -67,33 +94,33 @@ func read() []int64 {
 		if err != nil {
 			fmt.Println("Error during conversion")
 		}
-		switch n {
-		case 1:
-			a = append(a, 12)
-		case 2:
-			a = append(a, 2)
-		default:
-			a = append(a, marks)
-		}
+		ar = append(ar, marks)
 		n = n + 1
 	}
+	return ar
+}
 
-	n = 0
-	for n < len(a) {
-		switch a[n] {
-		case 1:
-			a = addNumbers(a, a[a[n+1]], a[a[n+2]], a[n+3])
-		case 2:
-			a = multiplyNumbers(a, a[a[n+1]], a[a[n+2]], a[n+3])
-		case 99:
-			fmt.Println(a[n])
+func read() []int64 {
+
+	var inputArray []int64 = readInput("input.txt")
+
+	var i int64 = 0
+	var j int64 = 0
+	for i <= 99 {
+		j = 0
+		for j <= 99 {
+			if checkThis(inputArray, i, j) {
+				return inputArray
+			} else {
+				j = j + 1
+			}
 		}
-		n = n + 4
+		i = i + 1
 	}
+	return inputArray[:3]
 
-	return a
 }
 
 func main() {
-	fmt.Println(read()[0])
+	fmt.Println(read())
 }
