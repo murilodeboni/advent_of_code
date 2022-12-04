@@ -12,3 +12,11 @@ let mapleader = ","
 
 " backspace works to delete
 :set backspace=indent,eol,start
+
+call pathogen#infect()
+call pathogen#helptags()
+
+" colorscheme
+:colorscheme molokai
+let g:molokai_original = 1
+
