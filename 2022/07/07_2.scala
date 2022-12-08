@@ -21,15 +21,20 @@ val dirList = paths.map(p => p.dropRight(2).mkString("")).toSet.toList
 
 val fileList = paths.map(p => (p.dropRight(1).mkString(""),p.last.toInt))
 
-def getDirSize(dirList: List[String], fileList: List[(String, Int)], ans: Int = 0): Int = {
+val totalSpace = 70000000
+val usedSpace = fileList.map(_._2).sum
+val unusedSpace = totalSpace - usedSpace
+val spaceToFree = 30000000 - unusedSpace
+
+def getDirSize(dirList: List[String], fileList: List[(String, Int)], spaceToFree: Int = spaceToFree, ans: Int = usedSpace): Int = {
   dirList.headOption match {
     case None => ans
     case Some(dir) => {
       val totalSize = fileList.filter(_._1.startsWith(dir)).map(_._2).sum
-      if (totalSize <= 100000) {
-        getDirSize(dirList.tail, fileList, ans + totalSize)
+      if (totalSize < ans && totalSize >= spaceToFree) {
+        getDirSize(dirList.tail, fileList, spaceToFree, totalSize)
       } else {
-        getDirSize(dirList.tail, fileList, ans)
+        getDirSize(dirList.tail, fileList, spaceToFree, ans)
       }
     }
   }
