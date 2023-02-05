@@ -1,5 +1,3 @@
-import PartOne14.Map.printMap
-
 import scala.annotation.tailrec
 import scala.io.Source
 
@@ -84,7 +82,12 @@ object PartOne14 extends App {
           }
         )
       )
-      Map(initialCoordinates ++ otherCoordinates)
+      val fullMap = Map(initialCoordinates ++ otherCoordinates)
+      fullMap
+    }
+
+    def countSnow(map: Map): Int = {
+      map.coordinates.count(_.hasSnow)
     }
   }
 
@@ -103,22 +106,52 @@ object PartOne14 extends App {
     }
   }
 
-  def putSnow(x: Int, y:Int, map: Map): Map = {
-    Map(map.coordinates.filter(c => c.x != x || c.y != y) :+ Coordinate(x = x, y = y, hasSnow = true))
-  }
-  def fallSnow(map: Map): Map = {
-    var (xi,yi) = (Map.source.x, Map.source.y)
+  @tailrec
+  def putSnow(x: Int, y:Int, map: Map, stop: Int): Map = {
+    val downLeft = Coordinate(x-1,y+1)
+    val downRight = Coordinate(x+1,y+1)
 
-    while (!isFull(xi,yi+1,map)) {
+    if (!isFull(x,y+1,map) && y <= stop) {
+      fallSnow(map, Coordinate(x,y), stop)
+    } else if (!isFull(downLeft.x,downLeft.y,map)) {
+      putSnow(downLeft.x, downLeft.y, map, stop)
+    } else if (!isFull(downRight.x,downRight.y,map)) {
+      putSnow(downRight.x, downRight.y, map, stop)
+    } else {
+      val newMap = Map(map.coordinates.filter(c => c.x != x || c.y != y) :+ Coordinate(x = x, y = y, hasSnow = true))
+      fallSnow(newMap, Map.source, stop)
+    }
+  }
+  @tailrec
+  def fallSnow(map: Map, source: Coordinate, stop: Int): Map = {
+    var (xi,yi) = (source.x, source.y)
+
+    while (!isFull(xi,yi+1,map) && yi <= stop) {
       yi = yi + 1
     }
 
-    val newMap = putSnow(xi,yi,map)
+//    Map.printMap(map)
+//    println(f"put snow $xi,$yi, stop is $stop, total snow is ${Map.countSnow(map)}")
 
-    printMap(newMap)
-    newMap
+
+    if (yi >= stop) {
+      map
+    } else {
+      val newMap = putSnow(xi,yi,map,stop)
+      if (Map.countSnow(newMap) == Map.countSnow(map)) {
+        println(s"This is the final map with snow, with ${Map.countSnow(map)} snowballs")
+        Map.printMap(map)
+        map
+      } else {
+        fallSnow(newMap, source, stop)
+      }
+    }
+
   }
 
   val map = Map.createMap(inputText)
-  fallSnow(map)
+  println(isFull(-1,-1,map))
+  println(map.coordinates.exists(c=> c.x == -1 && c.y == -1))
+  val (_, _, _, down) = Map.findBoundariesMap(map.coordinates)
+  fallSnow(map, Map.source, down)
 }
