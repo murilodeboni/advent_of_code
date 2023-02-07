@@ -41,20 +41,20 @@ object PartOne15 extends App {
 
   def clearSurroundings(read: Read, map: List[Int], goal: Int): List[Int] = {
     val radius = abs(read.sensor.x - read.closestBeacon.x) + abs(read.sensor.y - read.closestBeacon.y)
-    val xClearRange = (read.sensor.x - radius) to (read.sensor.x + radius)
+    val dy = abs(read.sensor.y - goal)
+    val xClearRange = ((read.sensor.x - radius) to (read.sensor.x + radius)).toArray.drop(dy).dropRight(dy)
     val yRangeContainsGoal = (read.sensor.y - radius) <= goal && goal <= (read.sensor.y + radius)
 
-    var tmp: List[Int] = List()
 
+    var tmp: List[Int] = List()
     if(yRangeContainsGoal) {
-      xClearRange.foreach(
-        i => {
-          println(i/xClearRange.size)
-          if (!map.contains(i) && getDistance(i, goal, read.sensor) <= radius) {
-            tmp = tmp :+ i
-          }
-        }
-      )
+    println(f"checking ${xClearRange.length} possibilities, max of ${xClearRange.max}")
+//      for (i <- xClearRange) {
+//          if (!map.contains(i) && getDistance(i, goal, read.sensor) <= radius) {
+//            tmp = tmp :+ i
+            tmp = xClearRange.filterNot(map.contains).toList
+//          }
+//      }
     }
 
     tmp
