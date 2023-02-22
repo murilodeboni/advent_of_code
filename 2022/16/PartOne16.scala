@@ -1,5 +1,6 @@
 import scala.annotation.tailrec
 import scala.io.Source
+import scala.math
 import scala.util.matching.Regex
 
 object PartOne16 extends App {
@@ -35,6 +36,17 @@ object PartOne16 extends App {
         if (debug) println(f"opening ${currentValve}")
         this.copy(valves = newValves, currentValve = newValve, time = time + 1, rate = getRate)
       }
+    }
+
+    // Floyd-Marshall
+    def getInitialDistances:Map[(String, String), Int] = {
+      val V = valves.map(_.code)
+      val valveInit: Map[(String, String), Int] = valves.map(vi => vi.leadsTo.map(vf => Map((vi.code, vf) -> 1)).reduce(_ ++ _)).reduce(_ ++ _)
+      var valveAll: Map[(String, String), Int] = valveInit
+      for { x <- V; y <- V; z <- V} yield {
+        valveAll = valveAll ++ Map((y,z) -> math.min(valveAll.getOrElse((y, z), 1000), valveAll.getOrElse((y, x), 1000) + valveAll.getOrElse((x,z), 1000)))
+      }
+      valveAll.filter(_._2 < 1000)
     }
   }
 
@@ -78,7 +90,9 @@ object PartOne16 extends App {
 
     val cave = Cave(valves, valves.head)
 
-    algo(cave, true)
+//    algo(cave, true)
+
+    println(cave.getInitialDistances)
   }
 
   run(true)
