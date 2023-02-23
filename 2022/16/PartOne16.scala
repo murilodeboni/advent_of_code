@@ -50,9 +50,19 @@ object PartOne16 extends App {
   val valves = parseInput(listInput)
   val cave = Cave(valves, valves.head)
   val distances: Map[(String, String), Int] = cave.getInitialDistances
-  var possibleResults = List(0)
 
-  val s = valves.find(_.code == "AA")
+  val s = valves.find(_.code == "AA").get
 
+  def run(t: Int = 30, s: Valve = s, valves: List[Valve] = valves): Int = {
+    println(t,s.code, valves.map(_.code))
+    valves.filter(v => distances((s.code,v.code))<t).map(
+      v => {
+        val d: Int = distances((s.code,v.code))
+        val nt: Int = t - d - 1
+          v.rate*nt + run(nt, v, valves.filter(_.code != v.code))
+      }
+    ).reduceOption(_.max(_)).getOrElse(0)
+  }
 
+  print(run())
 }
