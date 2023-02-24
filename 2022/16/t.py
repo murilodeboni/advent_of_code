@@ -12,20 +12,9 @@ for v, f, us in re.findall(r, open('input.txt').read()):
 for k, i, j in itertools.product(V, V, V):    # floyd-warshall
     D[i,j] = min(D[i,j], D[i,k] + D[k,j])
 
-print(V)
-
-print(D)
-
-step = 0
-global_step = 0
-
 @functools.cache
-def search(t, u='AA', vs=frozenset(F), step=step):
-    print(step, t, u, vs)
-    try:
-        return max([F[v] * (t-D[u,v]-1) + search(t-D[u,v]-1, v, vs-{v}, step+1)
-               for v in vs if D[u,v]<t])
-    except:
-        return 0
+def search(t, u='AA', vs=frozenset(F), e=False):
+    return max([F[v] * (t-D[u,v]-1) + search(t-D[u,v]-1, v, vs-{v}, e)
+           for v in vs if D[u,v]<t] + [search(26, vs=vs) if e else 0])
 
-print(search(30))
+print(search(30), search(26, e=True))

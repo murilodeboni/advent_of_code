@@ -46,20 +46,25 @@ object PartOne16 extends App {
     }
   }
 
-  val listInput = loadInput("./2022/16/test_input.txt")
+  val listInput = loadInput("./2022/16/input.txt")
   val valves = parseInput(listInput)
   val cave = Cave(valves, valves.head)
-  val distances: Map[(String, String), Int] = cave.getInitialDistances
+  val distances: Map[(String, String), Int] = cave.getInitialDistances.filter{case (k,_) => k._1 != k._2}
 
-  val s = valves.find(_.code == "AA").get
+  val s: String = valves.find(_.code == "AA").get.code
+  val flows: Map[String, Int] = valves.map(v => Map(v.code -> v.rate)).reduce(_ ++ _)
+  val valvesString: List[String] = valves.map(_.code).filter(flows(_) > 0)
 
-  def run(t: Int = 30, s: Valve = s, valves: List[Valve] = valves): Int = {
-    println(t,s.code, valves.map(_.code))
-    valves.filter(v => distances((s.code,v.code))<t).map(
+  var step = 1
+
+  def run(t: Int = 30, s: String = s, valves: List[String] = valvesString): Int = {
+    println(t,s, step)
+    step = step + 1
+    valves.filter(v=> {distances((s,v))<t}).map(
       v => {
-        val d: Int = distances((s.code,v.code))
+        val d: Int = distances((s,v))
         val nt: Int = t - d - 1
-          v.rate*nt + run(nt, v, valves.filter(_.code != v.code))
+        flows(v)*nt + run(nt, v, valves.filter(_!=v))
       }
     ).reduceOption(_.max(_)).getOrElse(0)
   }
