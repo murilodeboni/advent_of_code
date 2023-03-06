@@ -1,11 +1,11 @@
-import PartOne15.Area.{Area, Beacon}
+import PartTwo15.Area.{Area, Beacon}
 
 import scala.annotation.tailrec
 import scala.io.Source
 import scala.math.abs
 import scala.util.matching.Regex
 
-object PartOne15 extends App {
+object PartTwo15 extends App {
   val inputText= Source.fromFile(name = "./2022/15/input.txt")
     .getLines
     .toList
