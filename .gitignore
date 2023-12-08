@@ -2,3 +2,8 @@
 /**/*.swp
 .idea
 out
+
+
+# Added by cargo
+
+/target
