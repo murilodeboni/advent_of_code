@@ -23,9 +23,6 @@ fn main() {
     part1(&left, &right);
 
     part2(&left, &right);
-
-    let cwd = std::env::current_dir().unwrap();
-    println!("Current working directory: {:?}", cwd);
 }
 
 fn part1(l: &Vec<usize>, r: &Vec<usize>) {
