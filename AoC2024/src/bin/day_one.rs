@@ -1,16 +1,14 @@
 mod utils;
 
+use std::collections::HashMap;
+
 use utils::input::read_lines;
 
 fn main() {
-    let input = read_lines("/Users/murilodeboni/advent_of_code/AoC2024/src/bin/inputs/day_one.txt");
-
-    let k_input = &input[..5];
+    let input = read_lines("./src/bin/inputs/day_one.txt");
 
     let mut left: Vec<usize> = Vec::new();
     let mut right: Vec<usize> = Vec::new();
-
-    let l = input.len();
 
     for i in input {
         let parts: Vec<&str> = i.split("   ").collect();
@@ -22,14 +20,45 @@ fn main() {
         right.push(p2);
     }
 
+    part1(&left, &right);
+
+    part2(&left, &right);
+
+    let cwd = std::env::current_dir().unwrap();
+    println!("Current working directory: {:?}", cwd);
+}
+
+fn part1(l: &Vec<usize>, r: &Vec<usize>) {
+    let mut left = l.clone();
+    let mut right = r.clone();
+
     left.sort();
     right.sort();
 
     let mut dists: usize = 0;
 
-    for n in 0.. l {
+    for n in 0.. left.len() {
         dists += left[n].abs_diff(right[n]);
     }
 
     println!("{}", dists);
+}
+
+fn part2(l: &Vec<usize>, r: &Vec<usize>) {
+    let mut map_r: HashMap<usize, usize> = HashMap::new();
+
+    for n in r {
+        *map_r.entry(*n).or_insert(0) += 1;
+    }
+
+    let mut similarity: usize = 0;
+
+    for n in l {
+        if let Some(rv) = map_r.get(n) {
+            similarity += n*rv;
+        }
+    }
+
+    println!("{}", similarity);
+
 }
