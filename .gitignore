@@ -3,7 +3,7 @@
 .idea
 *.txt
 out
-
+.vscode
 
 # Added by cargo
 
