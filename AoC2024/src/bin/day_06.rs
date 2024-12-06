@@ -41,7 +41,7 @@ fn main() {
     let mut start_position: Position = (0, 0);
     let initial_direction = Direction::Up;
 
-    // Parse input and find the start position marked with '^'
+    // Parse input and find start position
     for (row_idx, line) in input.into_iter().enumerate() {
         let parts: Vec<String> = line.chars().map(|ch| ch.to_string()).collect();
         if let Some(sp) = line.find('^') {
@@ -50,13 +50,14 @@ fn main() {
         matrix.push(parts);
     }
 
-    // Part 1: Determine visited positions and whether a loop forms
+    // Part 1: Determine visited positions
     let (positions_map, _) = go(
         initial_direction,
         start_position,
         &matrix,
         HashMap::new(),
         HashMap::new(),
+        None,
     );
     let part_1_time = start.elapsed();
 
@@ -70,15 +71,14 @@ fn main() {
             continue;
         }
 
-        let mut matrix_with_obstacle = matrix.clone();
-        matrix_with_obstacle[pos.0][pos.1] = "#".to_string();
-
+        // Test with the extra obstruction placed at `pos`
         let (_, loop_detected) = go(
             initial_direction,
             start_position,
-            &matrix_with_obstacle,
+            &matrix,
             HashMap::new(),
             HashMap::new(),
+            Some(pos),
         );
 
         if loop_detected {
@@ -98,6 +98,7 @@ fn go(
     matrix: &Vec<Vec<String>>,
     mut positions_map: HashMap<Position, bool>,
     mut positions_direction_map: HashMap<(Position, Direction), usize>,
+    extra_obstruction: Option<Position>,
 ) -> (HashMap<Position, bool>, bool) {
     // Check if we've been here with the same direction before
     if positions_direction_map.contains_key(&(position, direction)) {
@@ -111,23 +112,33 @@ fn go(
 
     let new_position = match next_valid_position(position, direction, matrix) {
         Some(pos) => pos,
-        None => return (positions_map, false), // No valid move: guard leaves the area
+        None => return (positions_map, false), // Guard leaves the area
     };
 
     // If blocked, turn right and try again from the same spot
-    if is_blocked(new_position, matrix) {
-        return go(direction.turn(), position, matrix, positions_map, positions_direction_map);
+    if is_blocked(new_position, matrix, extra_obstruction) {
+        return go(
+            direction.turn(),
+            position,
+            matrix,
+            positions_map,
+            positions_direction_map,
+            extra_obstruction,
+        );
     }
 
     // Move forward
-    go(direction, new_position, matrix, positions_map, positions_direction_map)
+    go(
+        direction,
+        new_position,
+        matrix,
+        positions_map,
+        positions_direction_map,
+        extra_obstruction,
+    )
 }
 
-fn next_valid_position(
-    (r, c): Position,
-    direction: Direction,
-    matrix: &Vec<Vec<String>>,
-) -> Option<Position> {
+fn next_valid_position((r, c): Position, direction: Direction, matrix: &Vec<Vec<String>>) -> Option<Position> {
     let (dr, dc) = direction.delta();
     let new_r = r as isize + dr;
     let new_c = c as isize + dc;
@@ -143,7 +154,12 @@ fn next_valid_position(
     }
 }
 
-fn is_blocked(position: Position, matrix: &Vec<Vec<String>>) -> bool {
+fn is_blocked(position: Position, matrix: &Vec<Vec<String>>, extra_obstruction: Option<Position>) -> bool {
+    if let Some(obst) = extra_obstruction {
+        if position == obst {
+            return true;
+        }
+    }
     matrix[position.0][position.1] == "#"
 }
 
