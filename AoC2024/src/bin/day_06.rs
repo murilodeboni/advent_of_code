@@ -97,8 +97,8 @@ fn main() {
 
     // Count how many distinct positions visited in part 1
     let visited_count = positions_map.iter().flat_map(|row| row.iter()).filter(|&&b| b).count();
-    println!("part 1 - {} - {}", visited_count, part_1_time.as_secs());
-    println!("part 2 - {} - {}", part_2_ans, part_2_time.as_secs());
+    println!("part 1 - {} - {}", visited_count, part_1_time.as_millis());
+    println!("part 2 - {} - {}", part_2_ans, part_2_time.as_millis());
 }
 
 fn go(
