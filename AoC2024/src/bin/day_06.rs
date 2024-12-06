@@ -4,7 +4,10 @@ use utils::input::read_lines;
 
 use std::collections::HashMap;
 
+use std::time::Instant;
+
 fn main() {
+    let start = Instant::now();
     let input = read_lines("./src/bin/inputs/day_06.txt");
 
     let part_1_ans: usize;
@@ -30,6 +33,8 @@ fn main() {
     positions_map.insert(position, true);
     (positions_map, _) = go(&direction, position, &matrix, positions_map, HashMap::new());
 
+    let part_1_time = start.elapsed();
+
     let final_pos_map = positions_map.clone();
     
     for (k, _) in final_pos_map {
@@ -42,9 +47,10 @@ fn main() {
         part_2_ans += if works_for_part_2 {1} else {0};
     }
 
+    let part_2_time = start.elapsed() - part_1_time;
 
-    println!("{}", positions_map.len());
-    println!("{}", part_2_ans);
+    println!("part 1 - {} - {}", positions_map.len(), part_1_time.as_secs());
+    println!("part 2 - {} - {}", part_2_ans, part_2_time.as_secs());
 }
 
 fn go(direction: &String, position: (usize, usize), matrix: &Vec<Vec<String>>, mut positions_map: HashMap<(usize,usize), bool>, mut positions_direction_map: HashMap<((usize,usize), String), usize>) -> (HashMap<(usize,usize), bool>, bool) {
