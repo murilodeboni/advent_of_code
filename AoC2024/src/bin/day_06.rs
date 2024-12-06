@@ -8,6 +8,7 @@ fn main() {
     let input = read_lines("./src/bin/inputs/day_06.txt");
 
     let part_1_ans: usize;
+    let mut part_2_ans: usize = 0;
     
     let direction: String = "up".to_string();
     
@@ -27,12 +28,26 @@ fn main() {
     }
 
     positions_map.insert(position, true);
-    part_1_ans = go(direction, position, &matrix, positions_map);
+    (positions_map, _) = go(&direction, position, &matrix, positions_map, HashMap::new());
 
-    println!("{}", part_1_ans);
+    let final_pos_map = positions_map.clone();
+    
+    for (k, _) in final_pos_map {
+        let mut matrix_with_obstable = matrix.clone();
+        let works_for_part_2: bool;
+
+        matrix_with_obstable[k.0][k.1] = "#".to_string();
+        
+        (_, works_for_part_2) = go(&direction, position, &matrix_with_obstable, HashMap::from([(position, true)]), HashMap::new());
+        part_2_ans += if works_for_part_2 {1} else {0};
+    }
+
+
+    println!("{}", positions_map.len());
+    println!("{}", part_2_ans);
 }
 
-fn go(direction: String, position: (usize, usize), matrix: &Vec<Vec<String>>, mut positions_map: HashMap<(usize,usize), bool>) -> usize {
+fn go(direction: &String, position: (usize, usize), matrix: &Vec<Vec<String>>, mut positions_map: HashMap<(usize,usize), bool>, mut positions_direction_map: HashMap<((usize,usize), String), usize>) -> (HashMap<(usize,usize), bool>, bool) {
     // print_matrix(position, matrix);
     let new_position: (usize, usize);
 
@@ -40,39 +55,43 @@ fn go(direction: String, position: (usize, usize), matrix: &Vec<Vec<String>>, mu
         if position.0 >= 1 {
             new_position = (position.0 - 1, position.1);
         } else {
-            print_matrix(position, matrix);
-            return positions_map.len();
+            return (positions_map,false);
         }
     } else if direction == "right" {
         if position.1 < matrix[0].len() - 1 {
             new_position = (position.0 , position.1 + 1);
         } else {
-            print_matrix(position, matrix);
-            return positions_map.len();
+            return (positions_map, false);
         }
     } else if direction == "down" {
         if position.0 < matrix.len() - 1 {
             new_position = (position.0 + 1, position.1);
         } else {
-            print_matrix(position, matrix);
-            return positions_map.len();
+            return (positions_map, false);
         }
-    } else {
-        if position.0 >= 1 {
+    } else if direction == "left" {
+        if position.1 >= 1 {
             new_position = (position.0, position.1 - 1);
         } else {
-            print_matrix(position, matrix);
-            return positions_map.len();
+            return (positions_map, false);
         }
+    } else {
+        new_position = (0,0);
+        println!("ERROR when parsin directions");
     }
     
     let blocked = is_blocked(new_position, matrix);
 
     if blocked {
-        return go(turn(direction), position, matrix, positions_map);
+        return go(&turn(direction), position, matrix, positions_map, positions_direction_map);
     } else {
+        if let Some(value) = positions_direction_map.get(&(new_position, direction.clone())) {
+            return (positions_map, true);
+        } else {
+            positions_direction_map.entry((new_position, direction.clone())).or_insert(1);
+        }
         positions_map.insert(new_position, true);
-        return go(direction, new_position, matrix, positions_map);
+        return go(direction, new_position, matrix, positions_map, positions_direction_map);
     }
 }
 
@@ -80,7 +99,7 @@ fn is_blocked(position: (usize, usize), matrix: &Vec<Vec<String>>) -> bool {
     matrix[position.0][position.1] == "#"
 }
 
-fn turn(direction: String) -> String {
+fn turn(direction: &String) -> String {
     if direction == "up" {
         return "right".to_string();
     } else if direction == "right" {
