@@ -1,10 +1,12 @@
 .DS_STORE
 /**/*.swp
 .idea
-*.txt
+/**/*.txt
 out
 .vscode
 
 # Added by cargo
 
 **/target
+
+/**/*/sbt.json
