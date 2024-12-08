@@ -12,10 +12,10 @@ object PartOne17 extends App {
 
   var t = Tunnel(count = 0).init()
 
-  while (t.rockCount < 4) {
+  while (t.rockCount < 2023) {
     t = t.insert().move(listInput(t.count % listInputLen)).move("down")
-    t.print()
-    println("===============")
+//    t.print()
+    println(t.rockCount)
   }
 
   println(t.height())
@@ -81,6 +81,34 @@ case class Tunnel(t: Array[String] = Array(), count: Int) {
     // Convert the matrix into a mutable array of arrays for easier manipulation
     val board: Array[Array[Char]] = tunnel.map(_.toCharArray)
 
+    def detectGroundedPieces(board: Array[Array[Char]]): Set[(Int, Int)] = {
+      // Set to track grounded coordinates
+      var groundedPieces = Set[(Int, Int)]()
+
+      // Helper function to perform flood-fill from a given position
+      def floodFill(y: Int, x: Int): Unit = {
+        if (
+          y >= 0 && y < height && x >= 0 && x < width &&
+            !groundedPieces.contains((y, x)) &&
+            (board(y)(x) == '#' || board(y)(x) == '@' || board(y)(x) == '-')
+        ) {
+          groundedPieces += ((y, x))
+          floodFill(y - 1, x) // Up
+          floodFill(y, x + 1) // Right
+          floodFill(y, x - 1) // Left
+        }
+      }
+
+      // Start flood-fill from the ground level ('-' or '#')
+      for {
+        x <- 1 to 8
+      } {
+        val b = board(height-1)(x)
+        floodFill(height-1, x)
+      }
+      groundedPieces
+    }
+
     // Helper function to find the coordinates of the current shape
     def findShape() = {
       for {
@@ -98,11 +126,9 @@ case class Tunnel(t: Array[String] = Array(), count: Int) {
         val newY = y + dy
         val newX = x + dx
 
-        val canMove = newY >= 0 && newY < height &&
+        newY >= 0 && newY < height &&
           newX >= 0 && newX < width &&
           (board(newY)(newX) == ' ' || shapeCoords.contains((newY, newX)))
-
-        canMove
       }
     }
 
@@ -114,7 +140,7 @@ case class Tunnel(t: Array[String] = Array(), count: Int) {
       case _ => (0, 0) // No movement for invalid direction
     }
 
-    val canMoveAns: Boolean = canMove(dx,dy)
+    val canMoveAns: Boolean = canMove(dx, dy)
 
     // Move the shape if possible
     if (canMoveAns) {
@@ -122,19 +148,26 @@ case class Tunnel(t: Array[String] = Array(), count: Int) {
       shapeCoords.foreach { case (y, x) =>
         board(y)(x) = ' '
       }
-
       // Place the shape at the new position
       shapeCoords.foreach { case (y, x) =>
         board(y + dy)(x + dx) = '@'
       }
     } else if (!canMoveAns && direction == "down") {
-      shapeCoords.foreach { case (y, x) =>
-        board(y)(x) = '#'
+
+      val coordsToFreeze = detectGroundedPieces(board)
+
+      // Freeze only the pieces touching ground into '#'
+      coordsToFreeze.foreach { case (y, x) =>
+        if (y > 0) {
+          board(y)(x) = '#'
+        }
       }
     }
 
+    // Convert the board back to the Tunnel
     Tunnel(board.map(_.mkString), rockCount)
   }
+
 
   def emptyTunnelSection(s: Int): Tunnel = {
     if (s > 1) {
