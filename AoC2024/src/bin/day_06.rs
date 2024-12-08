@@ -1,127 +1,202 @@
 mod utils;
 
+use std::time::Instant;
 use utils::input::read_lines;
 
-use std::collections::HashMap;
+type Position = (usize, usize);
 
-use std::time::Instant;
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+enum Direction {
+    Up,
+    Right,
+    Down,
+    Left,
+}
+
+impl Direction {
+    fn turn(self) -> Self {
+        match self {
+            Direction::Up => Direction::Right,
+            Direction::Right => Direction::Down,
+            Direction::Down => Direction::Left,
+            Direction::Left => Direction::Up,
+        }
+    }
+
+    fn delta(&self) -> (isize, isize) {
+        match self {
+            Direction::Up => (-1, 0),
+            Direction::Right => (0, 1),
+            Direction::Down => (1, 0),
+            Direction::Left => (0, -1),
+        }
+    }
+}
+
+fn direction_to_index(d: Direction) -> usize {
+    match d {
+        Direction::Up => 0,
+        Direction::Right => 1,
+        Direction::Down => 2,
+        Direction::Left => 3,
+    }
+}
 
 fn main() {
     let start = Instant::now();
     let input = read_lines("./src/bin/inputs/day_06.txt");
+    let mut matrix: Vec<Vec<char>> = Vec::new();
+    let mut start_position: Position = (0, 0);
+    let initial_direction = Direction::Up;
 
-    let part_1_ans: usize;
-    let mut part_2_ans: usize = 0;
-    
-    let direction: String = "up".to_string();
-    
-    let mut matrix:Vec<Vec<String>> = Vec::new();
-    let mut position: (usize, usize) = (0,0);
-    
-    let mut positions_map: HashMap<(usize,usize), bool> = HashMap::new();
-    
-    let mut c = 0;
-    for i in input {
-        let parts: Vec<String> = i.chars().map(|c| c.to_string()).collect();
-        if let Some(sp) = i.find("^") {
-            position = (c, sp);
+    // Parse input and find start position
+    for (row_idx, line) in input.into_iter().enumerate() {
+        let parts: Vec<char> = line.chars().collect();
+        if let Some(sp) = line.find('^') {
+            start_position = (row_idx, sp);
         }
         matrix.push(parts);
-        c += 1
     }
 
-    positions_map.insert(position, true);
-    (positions_map, _) = go(&direction, position, &matrix, positions_map, HashMap::new());
+    let rows = matrix.len();
+    let cols = if rows > 0 { matrix[0].len() } else { 0 };
 
+    // Part 1: Determine visited positions
+    let (positions_map, _) = go(
+        initial_direction,
+        start_position,
+        &matrix,
+        rows,
+        cols,
+        None,
+    );
     let part_1_time = start.elapsed();
 
-    let final_pos_map = positions_map.clone();
-    
-    for (k, _) in final_pos_map {
-        let mut matrix_with_obstable = matrix.clone();
-        let works_for_part_2: bool;
-
-        matrix_with_obstable[k.0][k.1] = "#".to_string();
-        
-        (_, works_for_part_2) = go(&direction, position, &matrix_with_obstable, HashMap::from([(position, true)]), HashMap::new());
-        part_2_ans += if works_for_part_2 {1} else {0};
+    // Part 2: Try placing an obstruction in each visited cell (except the start)
+    // and see if it causes a loop
+    let mut part_2_ans = 0;
+    for r in 0..rows {
+        for c in 0..cols {
+            if positions_map[r][c] && (r, c) != start_position {
+                let (_, loop_detected) = go(
+                    initial_direction,
+                    start_position,
+                    &matrix,
+                    rows,
+                    cols,
+                    Some((r, c)),
+                );
+                if loop_detected {
+                    part_2_ans += 1;
+                }
+            }
+        }
     }
 
     let part_2_time = start.elapsed() - part_1_time;
 
-    println!("part 1 - {} - {}", positions_map.len(), part_1_time.as_secs());
-    println!("part 2 - {} - {}", part_2_ans, part_2_time.as_secs());
+    // Count how many distinct positions visited in part 1
+    let visited_count = positions_map.iter().flat_map(|row| row.iter()).filter(|&&b| b).count();
+    println!("part 1 - {} - {}", visited_count, part_1_time.as_millis());
+    println!("part 2 - {} - {}", part_2_ans, part_2_time.as_millis());
 }
 
-fn go(direction: &String, position: (usize, usize), matrix: &Vec<Vec<String>>, mut positions_map: HashMap<(usize,usize), bool>, mut positions_direction_map: HashMap<((usize,usize), String), usize>) -> (HashMap<(usize,usize), bool>, bool) {
-    // print_matrix(position, matrix);
-    let new_position: (usize, usize);
+fn go(
+    direction: Direction,
+    position: Position,
+    matrix: &Vec<Vec<char>>,
+    rows: usize,
+    cols: usize,
+    extra_obstruction: Option<Position>,
+) -> (Vec<Vec<bool>>, bool) {
+    // visited positions
+    let mut positions_map = vec![vec![false; cols]; rows];
+    // visited directions: positions_direction_map[row][col][dir_idx]
+    let mut positions_direction_map = vec![vec![[false; 4]; cols]; rows];
 
-    if direction == "up" {
-        if position.0 >= 1 {
-            new_position = (position.0 - 1, position.1);
-        } else {
-            return (positions_map,false);
+    simulate(
+        direction,
+        position,
+        matrix,
+        &mut positions_map,
+        &mut positions_direction_map,
+        extra_obstruction,
+    )
+}
+
+fn simulate(
+    direction: Direction,
+    position: Position,
+    matrix: &Vec<Vec<char>>,
+    positions_map: &mut [Vec<bool>],
+    positions_direction_map: &mut [Vec<[bool;4]>],
+    extra_obstruction: Option<Position>,
+) -> (Vec<Vec<bool>>, bool) {
+    let (mut dir, mut pos) = (direction, position);
+
+    loop {
+        let dir_idx = direction_to_index(dir);
+
+        // Check if we've been here with the same direction before
+        if positions_direction_map[pos.0][pos.1][dir_idx] {
+            // Loop detected
+            return (positions_map.to_vec(), true);
         }
-    } else if direction == "right" {
-        if position.1 < matrix[0].len() - 1 {
-            new_position = (position.0 , position.1 + 1);
-        } else {
-            return (positions_map, false);
+
+        // Mark current position and direction as visited
+        positions_direction_map[pos.0][pos.1][dir_idx] = true;
+        positions_map[pos.0][pos.1] = true;
+
+        let next_pos = next_valid_position(pos, dir, matrix);
+        // Guard leaves the area
+        if next_pos.is_none() {
+            return (positions_map.to_vec(), false);
         }
-    } else if direction == "down" {
-        if position.0 < matrix.len() - 1 {
-            new_position = (position.0 + 1, position.1);
+
+        let new_pos = next_pos.unwrap();
+
+        // If blocked, turn right and try again from the same spot
+        if is_blocked(new_pos, matrix, extra_obstruction) {
+            dir = dir.turn();
+            // do not move forward, just change direction
         } else {
-            return (positions_map, false);
+            // Move forward
+            pos = new_pos;
         }
-    } else if direction == "left" {
-        if position.1 >= 1 {
-            new_position = (position.0, position.1 - 1);
-        } else {
-            return (positions_map, false);
-        }
-    } else {
-        new_position = (0,0);
-        println!("ERROR when parsin directions");
     }
-    
-    let blocked = is_blocked(new_position, matrix);
+}
 
-    if blocked {
-        return go(&turn(direction), position, matrix, positions_map, positions_direction_map);
+fn next_valid_position((r, c): Position, direction: Direction, matrix: &Vec<Vec<char>>) -> Option<Position> {
+    let (dr, dc) = direction.delta();
+    let new_r = r as isize + dr;
+    let new_c = c as isize + dc;
+
+    if new_r < 0
+        || new_r >= matrix.len() as isize
+        || new_c < 0
+        || new_c >= matrix[0].len() as isize
+    {
+        None
     } else {
-        if let Some(value) = positions_direction_map.get(&(new_position, direction.clone())) {
-            return (positions_map, true);
-        } else {
-            positions_direction_map.entry((new_position, direction.clone())).or_insert(1);
+        Some((new_r as usize, new_c as usize))
+    }
+}
+
+fn is_blocked(position: Position, matrix: &Vec<Vec<char>>, extra_obstruction: Option<Position>) -> bool {
+    if let Some(obst) = extra_obstruction {
+        if position == obst {
+            return true;
         }
-        positions_map.insert(new_position, true);
-        return go(direction, new_position, matrix, positions_map, positions_direction_map);
     }
+    matrix[position.0][position.1] == '#'
 }
 
-fn is_blocked(position: (usize, usize), matrix: &Vec<Vec<String>>) -> bool {
-    matrix[position.0][position.1] == "#"
-}
-
-fn turn(direction: &String) -> String {
-    if direction == "up" {
-        return "right".to_string();
-    } else if direction == "right" {
-        return "down".to_string();
-    } else if direction == "down" {
-        return "left".to_string();
-    } else {
-        return "up".to_string();
-    }
-}
-
-fn print_matrix(position: (usize, usize), matrix: &Vec<Vec<String>>) -> () {
+#[allow(dead_code)]
+fn print_matrix(position: Position, matrix: &Vec<Vec<char>>) {
     let mut nm = matrix.clone();
-    nm[position.0][position.1] = "K".to_string();
-    for m in nm {
-        println!("{:?}", m.concat());
+    nm[position.0][position.1] = 'K';
+    for row in nm {
+        println!("{}", row.iter().collect::<String>());
     }
     println!("================");
 }
