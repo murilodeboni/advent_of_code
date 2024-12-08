@@ -28,20 +28,18 @@ impl Node {
 
         let mut ans: Vec<Node> = vec![];
 
-        let d1 = (self.x as isize + dx, self.y as isize + dy);
-        let d2 = (node.x as isize - dx, node.y as isize - dy);
+        let mut d1 = (self.x as isize + dx, self.y as isize + dy);
+        let mut d2 = (node.x as isize - dx, node.y as isize - dy);
 
-        if check_boundaries(d1, max_rows) {
+        // PART 1 is using if instead of while
+        while check_boundaries(d1, max_rows) {
             ans.push(Node{x: d1.0 as usize, y: d1.1 as usize});
+            d1 = (d1.0 + dx, d1.1 + dy);
         }
-        if check_boundaries(d2, max_rows) {
+        while check_boundaries(d2, max_rows) {
             ans.push(Node{x: d2.0 as usize, y: d2.1 as usize});
+            d2 = (d2.0 - dx, d2.1 - dy);
         }
-        
-        // for n in &ans {
-        //     println!("{}", n);
-        // }
-        
         ans
     }
 }
@@ -49,7 +47,7 @@ impl Node {
 fn main() {
     let start = Instant::now();
     let input = read_lines("./src/bin/inputs/day_08.txt");
-    let part_1_ans: usize;
+    let mut ans: usize = 0;
 
     let mut node_map: HashMap<char, Vec<Node>> = HashMap::new();
 
@@ -68,9 +66,8 @@ fn main() {
         }
     }
 
-    // print_map(&node_map);
-    part_1_ans = part1(node_map, &input);
-    println!("{}", part_1_ans);
+    ans += part1(node_map, &input);
+    println!("Answer - {}, took {}ms", ans, start.elapsed().as_millis());
 
 
 }
@@ -80,10 +77,9 @@ fn part1(node_map: HashMap<char, Vec<Node>>, input: &Vec<String>) -> usize {
 
     let mut unique: HashSet<Node> = HashSet::new();
     
-    for (c, nodes) in node_map {
+    for (c, nodes) in &node_map {
         for i in 0..nodes.len() {
             for j in (i+1)..nodes.len() {
-                // println!(" char {} - comparing {} with {}", c, nodes[i], nodes[j]);
                 let an = nodes[i].find_antinodes(&nodes[j], max_rows);
                 // debug_grid(max_rows as usize, c, vec![&nodes[i],&nodes[j]], &an);
                 unique.extend(an);
@@ -91,21 +87,18 @@ fn part1(node_map: HashMap<char, Vec<Node>>, input: &Vec<String>) -> usize {
         }
 
     }
+
+    for (c, ns) in node_map {
+        if &ns.len() > &1 {
+            unique.extend(ns);
+        }
+    }
+
     unique.len()
 }
 
 fn check_boundaries(node: (isize, isize), max_rows: isize) -> bool {
     node.0 as isize >= 0 && node.1 as isize >= 0 && (node.0 as isize) < max_rows && (node.1 as isize) <  max_rows
-}
-
-fn print_map(node_map: &HashMap<char, Vec<Node>>) {
-    for (key, nodes) in node_map {
-        print!("{}: [", key);
-        for node in nodes {
-            print!("{} ", node);
-        }
-        println!("]");
-    }
 }
 
 fn debug_grid(n: usize, ch: char, locations: Vec<&Node>, antinodes: &Vec<Node>) {
