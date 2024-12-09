@@ -24,8 +24,8 @@ fn main() {
         }
     }
 
-    // println!("{:?} {}", calculate_ans(part_1(&file_size, &free_space)), {start.elapsed().as_millis()});
-    println!("{:?} {}", calculate_ans_chars(part_2(&file_size, &free_space)), {start.elapsed().as_millis()});
+    println!("{:?} {}", calculate_ans(part_1(&file_size, &free_space)), {start.elapsed().as_millis()});
+    println!("WIP - {:?} {}", calculate_ans_chars(part_2(&file_size, &free_space)), {start.elapsed().as_millis()});
 
 }
 
@@ -71,45 +71,34 @@ fn part_2(file_size: &Vec<(usize, usize)>, free_space: &Vec<usize>) -> Vec<char>
 
     for i in 0..free_space.len() {
         v.append(&mut vec![create_str(file_size[i].0.to_string(), file_size[i].1)]);
-        v.append(&mut vec![create_str(String::from("."), file_size[i].1)]);
+        v.append(&mut vec![create_str(String::from("."), free_space[i])]);
     }
     v.append(&mut vec![create_str(file_size[file_size.len()-1].0.to_string(), file_size[file_size.len()-1].1)]);
-
-    // println!("vector - {:?}", v);
-
-    let mut sv: Vec<String> = Vec::new();
-    let mut rest_sv: String = String::new();
-    let mut final_string = String::new();
 
     let mut i = 0;
     let mut j = v.len()-1;
 
-    while i <= j {
-        let i_can_be_parsed: bool = v[i].parse::<usize>().is_ok();
-        if i_can_be_parsed {
-            sv.push(v[i].clone());
-            i += 1;
-        } else {
-            let j_can_be_parsed: bool = v[j].parse::<i32>().is_ok();
-            if j_can_be_parsed && v[j].len() == v[i].len() {
-                sv.push(v[j].clone());
-                j -= 1;
-                i += 1;
-            } else if j_can_be_parsed && v[j].len() < v[i].len() {
-                sv.push(v[j].clone());
-                v[i] = create_str(String::from("."), v[i].len() - v[j].len());
-                j -= 1;
-            } else {
-                rest_sv = v[j].clone() + &rest_sv;
-                j -= 1
-            }
-        }
+    // println!("{:?}", v);
 
-        final_string = sv.concat() + &rest_sv;
-        println!("{:?}", final_string);
-    }
+    // TODO: what if we modify v throughout this pass?
+    // while i <= j {
+    //     let i_can_be_parsed: bool = v[i].parse::<usize>().is_ok();
+    //     if i_can_be_parsed {
+    //         i += 1;
+    //     } else {
+    //         let j_can_be_parsed: bool = v[j].parse::<i32>().is_ok();
+    //         if j_can_be_parsed && v[j].len() == v[i].len() {
+    //             // TODO - debug what goes on here
+    //         } else if j_can_be_parsed && v[j].len() < v[i].len() {
+    //             // TODO - debug what goes on here
+    //         } else {
+    //             // TODO - debug what goes on here
+    //         }
+    //     }
+    //     println!("{:?}", v.concat());
+    // }
 
-    final_string.chars().collect()
+    v.concat().chars().collect()
 }
 
 fn calculate_ans_chars(v: Vec<char>) -> usize {
