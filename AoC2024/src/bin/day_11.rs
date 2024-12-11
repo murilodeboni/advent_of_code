@@ -16,12 +16,12 @@ fn main() {
 
     let mut part1: usize = 0; 
     
-    for i in 0..75 {
+    for i in 0..25 {
         println!("{}", i);
         rocks = blink(rocks);
         if i == 24 {
             part1 = rocks.len();
-            println!("part 1: {}", part1);
+            println!("part 1: {} took {}ms", part1, start.elapsed().as_millis());
         }
     }
     println!("part 2: {}", rocks.len());
