@@ -74,7 +74,7 @@ fn dfs(
 
 fn add_perimiter(pos: (usize,usize), grid: &Vec<Vec<char>>, directions: &[(isize, isize); 4], plant: char) -> (usize, usize) {
     let mut perimeter: usize = 0;
-    let mut sides: usize = 0;
+    let mut sides: usize = 0; //external insight: sides = corners
     let mut dir_with_per: Vec<(isize,isize)> = Vec::new();
 
     for (dx, dy) in directions.iter() {
@@ -126,23 +126,16 @@ fn add_perimiter(pos: (usize,usize), grid: &Vec<Vec<char>>, directions: &[(isize
     for (dx, dy) in diagonals.iter() {
         let new_x = pos.0 as isize + dx ;
         let new_y = pos.1 as isize + dy;
-        if new_x >= 0 && new_x < grid.len() as isize && new_y >= 0 && new_y < grid[0].len() as isize {
-            // println!("({},{}) - perimeters {:?} - diagonal ({},{}), {}, {}, {}",pos.0,pos.1,dir_with_per, dx, dy, grid[pos.0][new_y as usize] == plant, grid[new_x as usize][pos.1] == plant, grid[new_x as usize][new_y as usize] != plant);
-            if grid[pos.0][new_y as usize] == plant && grid[new_x as usize][pos.1] == plant {
-                if grid[new_x as usize][new_y as usize] != plant {
-                    sides += 1
-                }
-            }
+        if new_x >= 0
+        && new_x < grid.len() as isize 
+        && new_y >= 0 
+        && new_y < grid[0].len() as isize 
+        && grid[pos.0][new_y as usize] == plant
+        && grid[new_x as usize][pos.1] == plant 
+        && grid[new_x as usize][new_y as usize] != plant {
+            sides += 1
         }
     }
 
-
-    // println!{"({},{}) has {} sides",pos.0,pos.1,sides}
     (perimeter, sides)
-}
-
-fn print_grid(grid: &Vec<Vec<u32>>) {
-    for j in 0..grid.len() {
-        println!("{:?}", grid[j])
-    }
 }
