@@ -6,7 +6,7 @@ use std::{collections::HashMap, time::Instant};
 
 fn main() {
     let start = Instant::now();
-    let input = read_lines("./src/bin/inputs/day_11_test.txt");
+    let input = read_lines("./src/bin/inputs/day_11.txt");
     let rocks: Vec<usize> = input[0]
         .split(" ")
         .map(|l| l
@@ -23,43 +23,46 @@ fn main() {
     let mut part1: usize;
     let part2: usize;
     
-    for i in 0..6 {
-        println!("{}", i);
+    for i in 0..75 {
+        // println!("{}", i);
         blink(&mut d);
         if i == 24 {
             part1 = d.values().sum();
             println!("part 1: {} took {}ms", part1, start.elapsed().as_millis());
         }
-        print_dict(d.clone());
+        // print_dict(d.clone());
     }
 
     part2 = d.values().sum();
-    println!("part 2: {}", part2);
+    println!("part 2: {} took {}ms", part2, start.elapsed().as_millis());
 
 
 }
 
-fn blink(d: &mut HashMap<usize, usize>) {
-    let rocks: Vec<(usize, usize)> = d.iter()
-    .filter(|&(_, &v)| v > 0)
-    .map(|(&k, &v)| (k, v))
-    .collect();
 
-    for (rock, v) in rocks.clone() {
+fn blink(d: &mut HashMap<usize, usize>) {
+    let old_dict = d.clone();
+
+    let rocks: Vec<(usize, usize)> = old_dict.into_iter()
+        .filter(|&(_, v)| v > 0)
+        .collect();
+
+    for (rock, v) in rocks {
         if let Some(value) = d.get_mut(&rock) {
             if *value > 0 {
-                *value = 0;
+                *value -=v ;
             }
         }
-        
+
         if rock == 0 {
             *d.entry(1).or_insert(0) += v;
         } else if has_even_digits(&rock) {
-            for r in split(&rock) {
+            let split_values: Vec<_> = split(&rock);
+            for r in split_values {
                 *d.entry(r).or_insert(0) += v;
             }
         } else {
-            *d.entry(rock*2024).or_insert(0) += v;
+            *d.entry(rock * 2024).or_insert(0) += v;
         }
     }
 }
