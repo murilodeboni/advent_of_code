@@ -36,8 +36,6 @@ fn main() {
 
     }
 
-    let mut part1 = 0;
-
     let mut i = 0;
     while i < numbers.len() {
         let behavior = Behavior {
@@ -46,31 +44,18 @@ fn main() {
             price: (numbers[i+2][0] + 10000000000000, numbers[i+2][1] + 10000000000000)
         };
         i=i+3;
-        let (a,b) = solve_system(&behavior);
-        // println!("{:?} - (a={} b={}) - {} - {} {}",
-        //  &behavior, 
-        //  a, 
-        //  b, 
-        //  3*a+b, 
-        //  (a*behavior.a.0 as isize + b*behavior.b.0 as isize) == behavior.price.0 as isize,
-        //  (a*behavior.a.1 as isize + b*behavior.b.1 as isize) == behavior.price.1 as isize);
 
-        if (a*behavior.a.0 as isize + b*behavior.b.0 as isize) == behavior.price.0 as isize&&
-        (a*behavior.a.1 as isize + b*behavior.b.1 as isize) == behavior.price.1 as isize {
+        let (a,b) = solve_system(&behavior);
+
+        if (a*behavior.a.0 as isize + b*behavior.b.0 as isize) == behavior.price.0 as isize
+        && (a*behavior.a.1 as isize + b*behavior.b.1 as isize) == behavior.price.1 as isize {
             tokens.push((a,b));
         }
-
     }
 
-    // let valid_tokens: Vec<&(isize, isize)> = tokens.iter().filter(
-    //     |(a,b)| a >= &0 && a<=&100 && b>=&0 && b<=&100
-    // ).collect();
+    let part2: isize = tokens.iter().map(|(a,b)| 3*a+b).sum();
 
-    // println!("{:?}", valid_tokens);
-
-    let part1: isize = tokens.iter().map(|(a,b)| 3*a+b).sum();
-
-    println!("{:?}", part1);
+    println!("{:?} took {}ms", part2, start.elapsed().as_millis());
 }
 
 fn solve_system(behaviour: &Behavior) -> (isize,isize) {
@@ -87,6 +72,5 @@ fn solve_system(behaviour: &Behavior) -> (isize,isize) {
     let y = (z*c-w*a)/(c*b-a*d);
     let x = (z-b*y)/a;
 
-    // println!("x = {} y = {}", x,y);
     (x,y)
 }
