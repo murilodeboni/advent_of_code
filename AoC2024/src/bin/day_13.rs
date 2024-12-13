@@ -43,17 +43,17 @@ fn main() {
         let behavior = Behavior {
             a: (numbers[i][0], numbers[i][1]),
             b: (numbers[i+1][0], numbers[i+1][1]),
-            price: (numbers[i+2][0], numbers[i+2][1])
+            price: (numbers[i+2][0] + 10000000000000, numbers[i+2][1] + 10000000000000)
         };
         i=i+3;
         let (a,b) = solve_system(&behavior);
-        println!("{:?} - (a={} b={}) - {} - {} {}",
-         &behavior, 
-         a, 
-         b, 
-         3*a+b, 
-         (a*behavior.a.0 as isize + b*behavior.b.0 as isize) == behavior.price.0 as isize,
-         (a*behavior.a.1 as isize + b*behavior.b.1 as isize) == behavior.price.1 as isize);
+        // println!("{:?} - (a={} b={}) - {} - {} {}",
+        //  &behavior, 
+        //  a, 
+        //  b, 
+        //  3*a+b, 
+        //  (a*behavior.a.0 as isize + b*behavior.b.0 as isize) == behavior.price.0 as isize,
+        //  (a*behavior.a.1 as isize + b*behavior.b.1 as isize) == behavior.price.1 as isize);
 
         if (a*behavior.a.0 as isize + b*behavior.b.0 as isize) == behavior.price.0 as isize&&
         (a*behavior.a.1 as isize + b*behavior.b.1 as isize) == behavior.price.1 as isize {
