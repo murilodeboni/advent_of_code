@@ -8,7 +8,7 @@ fn main() {
     let start = Instant::now();
     let grid_input: Vec<String> = read_lines("./src/bin/inputs/day_15_1_test.txt");
     let commands_input: Vec<String> = read_lines("./src/bin/inputs/day_15_2_test.txt");
-    // let commands_input: Vec<String> = vec![">>>vvvvv".to_string()]; // TESTING
+    let commands_input: Vec<String> = vec![">>>vvvvv".to_string()]; // TESTING
     let grid_collect_part_1: Vec<Vec<char>> = grid_input
         .iter()
         .map(|line| line.chars().collect())
@@ -47,15 +47,15 @@ fn main() {
 
     for line in commands_input {
         for command in line.chars() {
-            // println!("Processing command: '{}'", command);
+            println!("Processing command: '{}'", command);
             if direction_map.contains_key(&command) {
                 let success = move_position(&mut grid, &mut initial_position, command, &direction_map);
-                // if success {
-                //     println!("Moved '{}' successfully.", command);
-                // } else {
-                //     println!("Failed to move '{}' due to obstacle.", command);
-                // }
-                // print_grid(&grid);
+                if success {
+                    println!("Moved '{}' successfully.", command);
+                } else {
+                    println!("Failed to move '{}' due to obstacle.", command);
+                }
+                print_grid(&grid);
             } else {
                 // println!("Unknown command: '{}'", command);
             }
@@ -76,51 +76,74 @@ fn move_position(
     direction: char,
     direction_map: &HashMap<char, (isize, isize)>,
 ) -> bool {
+    let original_grid = grid.clone();
+
+    let mut pos_to_move:Vec<(usize,usize)> = vec![*position];
+    if grid[position.0][position.1] == '[' {
+        pos_to_move.push((position.0+1,position.1));
+    } else if grid[position.0][position.1] == ']' {
+        pos_to_move.push((position.0-1,position.1));
+    }
+
     // Get movement offsets
     let to = direction_map.get(&direction).unwrap();
 
-    // Calculate new position with boundary checks
-    let new_i = (position.0 as isize + to.0) as usize;
-    let new_j = (position.1 as isize + to.1) as usize;
-
-    // Ensure new_i and new_j are within grid bounds
-    if new_i >= grid.len()-1 || new_j >= grid[0].len()-1 || new_i <= 0 || new_j <= 0 {
-        // println!("Move into wall: ({}, {})", new_i, new_j);
-        return false;
+    
+    for (new_i, new_j) in &pos_to_move {
+        // Ensure new_i and new_j are within grid bounds
+        if *new_i >= grid.len()-1 || *new_j >= grid[0].len()-1 || *new_i <= 0 || *new_j <= 0 {
+            println!("Move into wall: ({}, {})", new_i, new_j);
+            return false;
+        }
     }
 
-    let target_cell = grid[new_i][new_j];
+    for position in pos_to_move {
+        // Calculate new position with boundary checks
+        let new_i = (position.0 as isize + to.0) as usize;
+        let new_j = (position.1 as isize + to.1) as usize;
 
-    // Current cell content
-    let original = grid[position.0][position.1];
+        let target_cell = grid[new_i][new_j];
 
-    if target_cell == '.' {
-        // println!("Moving into empty space at ({}, {}).", new_i, new_j);
-        grid[position.0][position.1] = '.'; // Clear original position
-        grid[new_i][new_j] = original; // Move player to new position
-        *position = (new_i, new_j); // Update player's position
-        true
-    } else if target_cell == 'O' {
-        // println!("Encountered rock at ({}, {}). Attempting to push.", new_i, new_j);
-        // Attempt to push the rock in the same direction
-        let can_push = move_position(grid, &mut (new_i, new_j), direction, direction_map);
-        if can_push {
-            // After pushing the rock, move the player
+        // Current cell content
+        let original = grid[position.0][position.1];
+
+        if target_cell == '.' {
+            println!("Moving into empty space at ({}, {}).", new_i, new_j);
             grid[position.0][position.1] = '.'; // Clear original position
             grid[new_i][new_j] = original; // Move player to new position
-            *position = (new_i, new_j); // Update player's position
-            true
+            return true
+        } else if target_cell == '[' || target_cell == ']' {
+            println!("Encountered rock at ({}, {}). Attempting to push.", new_i, new_j);
+            // Attempt to push the rock in the same direction
+            
+            let mut new_i2: usize = 0;
+            if target_cell == '[' {
+                new_i2 = new_i + 1;
+            } else {
+                new_i2 = new_i - 1;
+            }
+            
+            let can_push = move_position(grid, &mut (new_i, new_j), direction, direction_map) 
+                                && move_position(grid, &mut (new_i2, new_j), direction, direction_map);;
+            if can_push {
+                // After pushing the rock, move the player
+                grid[position.0][position.1] = '.'; // Clear original position
+                grid[new_i][new_j] = original; // Move player to new position
+                return true
+            } else {
+                println!("Failed to push the rock at ({}, {}).", new_i, new_j);
+                *grid = original_grid;
+                return false
+            }
         } else {
-            // println!("Failed to push the rock at ({}, {}).", new_i, new_j);
-            false
+            println!(
+                "Cannot move to ({}, {}): Cell occupied by '{}'.",
+                new_i, new_j, target_cell
+            );
+            return false
         }
-    } else {
-        // println!(
-        //     // "Cannot move to ({}, {}): Cell occupied by '{}'.",
-        //     new_i, new_j, target_cell
-        // );
-        false
     }
+    return false
 }
 
 fn box_coordinates_sum(grid: &Vec<Vec<char>>) -> usize {
