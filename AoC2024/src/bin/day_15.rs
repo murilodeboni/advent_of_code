@@ -6,14 +6,27 @@ use std::{collections::HashMap, time::Instant};
 
 fn main() {
     let start = Instant::now();
-    let grid_input: Vec<String> = read_lines("./src/bin/inputs/day_15_1.txt");
-    let commands_input: Vec<String> = read_lines("./src/bin/inputs/day_15_2.txt");
+    let grid_input: Vec<String> = read_lines("./src/bin/inputs/day_15_1_test.txt");
+    let commands_input: Vec<String> = read_lines("./src/bin/inputs/day_15_2_test.txt");
     // let commands_input: Vec<String> = vec![">>>vvvvv".to_string()]; // TESTING
-    let grid_collect: Vec<Vec<char>> = grid_input
+    let grid_collect_part_1: Vec<Vec<char>> = grid_input
         .iter()
         .map(|line| line.chars().collect())
         .collect();
-    let mut grid: Vec<Vec<char>> = grid_collect;
+
+    fn replacements(s: &String) -> String {
+        s.replace("#", "##").replace(".", "..").replace("@", "@.").replace("O", "[]")
+    }
+
+    let grid_collect_part_2: Vec<Vec<char>> = grid_input
+        .iter()
+        .map(|line| replacements(line).chars().collect())
+        .collect();
+
+    let mut grid: Vec<Vec<char>> = grid_collect_part_2;
+
+    print_grid(&grid);
+
     let mut initial_position: (usize,usize) = (0,0);
     let direction_map: HashMap<char, (isize, isize)> = HashMap::from([
         ('>', (0, 1)),
