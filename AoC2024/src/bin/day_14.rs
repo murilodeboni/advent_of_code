@@ -27,7 +27,7 @@ fn main() {
             robots.push(robot);
         }
     }
-    for t in 7624.. {
+    for t in 7700..7710 {
         println!("Time {}", t);
         println!("{:?}", part1(&robots, t, (101,103)));
         // Sleep for 1 second
