@@ -56,7 +56,7 @@ fn heuristic(a: &Position, b: &Position) -> usize {
 
 fn main() {
     let start = Instant::now();
-    let input = read_lines("./src/bin/inputs/day_16.txt");
+    let input = read_lines("./src/bin/inputs/day_16_test.txt");
     let grid: Vec<Vec<char>> = input.iter().map(|l| l
         .chars()
         .collect()
@@ -91,6 +91,7 @@ fn astar_shortest_path(
 ) -> usize {
     let rows = grid.len();
     let cols = if rows > 0 { grid[0].len() } else { 0 };
+    let mut part1: usize = 0;
 
     // Directions with their (di, dj) changes
     let directions = vec![
@@ -120,24 +121,27 @@ fn astar_shortest_path(
     let mut predecessors: HashMap<(usize, usize, Direction), (Position, Direction)> =
         HashMap::new();
 
-    while let Some(current_state) = heap.pop() {
-        let current_pos = current_state.position.clone();
-        let current_dir = current_state.direction;
-
-        // Check if we have reached the end
-        if current_pos == end {
+        while let Some(current_state) = heap.pop() {
+            let current_pos = current_state.position.clone();
+            let current_dir = current_state.direction;
+            
+            // Check if we have reached the end
+            if current_pos == end {
+            part1 = current_state.cost;
+            println!("heap {:?}", heap);
             // Reconstruct the path
-            return current_state.cost;
-            // let mut path = Vec::new();
-            // let mut key = (current_pos.i, current_pos.j, current_dir);
-            // while key != (start.i, start.j, Direction::Right) {
-            //     let (pos, dir) = predecessors[&key].clone();
-            //     path.push(pos.clone());
-            //     key = (pos.i, pos.j, dir);
-            // }
-            // // path.push(start.clone());
-            // path.reverse();
+            let mut path = Vec::new();
+            let mut key = (current_pos.i, current_pos.j, current_dir);
+            while key != (start.i, start.j, Direction::Right) {
+                let (pos, dir) = predecessors[&key].clone();
+                path.push(pos.clone());
+                key = (pos.i, pos.j, dir);
+            }
+            // path.push(start.clone());
+            path.reverse();
             // return he;
+            println!("predecessors {:?}", predecessors);
+            return part1
         }
 
         // Explore neighbors
@@ -187,6 +191,7 @@ fn astar_shortest_path(
                 predecessors.insert((new_i, new_j, move_dir), (current_pos.clone(), current_dir));
             }
         }
+
     }
 
     // No path found
