@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-
+#[derive(Debug)]
 struct Chrono {
     A: usize,
     B: usize,
@@ -12,6 +12,16 @@ struct Chrono {
 } 
 
 impl Chrono {
+    fn reset(&mut self, i: usize) {
+        self.A = i;
+        self.B = 0;
+        self.C = 0;
+        self.Program = vec![0,3,5,4,3,0];
+        self.instruction = 0;
+        self.Ans = Vec::new();
+        self.halted = false;
+    }
+    
     fn inc_pointer(&mut self) {
         self.instruction += 2;
     }
@@ -121,19 +131,33 @@ impl Chrono {
 
 fn main() {
     let start = Instant::now();
+
+    // part 1
+    // while !crono.halted {
+    //     crono.run();
+    // }
+
+    let mut i = 2024;
     let mut crono = Chrono {
-        A: 62769524,
+        A: i,
         B: 0,
         C: 0,
-        Program: vec![2,4,1,7,7,5,0,3,4,0,1,7,5,5,3,0],
+        Program: vec![0,3,5,4,3,0],
         instruction: 0,
         halted: false,
         Ans: Vec::new()
     };
 
-    while !crono.halted {
-        crono.run();
+    while crono.Ans != crono.Program {
+
+        i += 1;
+        crono.reset(i);
+        while !crono.halted {
+            crono.run();
+        }
+        println!("trying {:?} {}", crono, i);
     }
 
-    println!("{:?}", crono.Ans)
+
+    println!("{:?}", crono.A)
 }
