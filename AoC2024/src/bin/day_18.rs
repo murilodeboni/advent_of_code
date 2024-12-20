@@ -26,22 +26,28 @@ fn main() {
 
         coordinate.push((p1,p2));
     }
-
-    for  i in 0..bytes_simulated {
+    
+    let mut halt = false;
+    let mut i = 0;
+    while !halt {
         let (x,y) = coordinate[i];
         grid[y][x] = "#";
-    }
-
-    print_grid(&grid);
-
-    if let Some(part1) = bfs(grid, current_space, end_space) {
-        println!("part 1 - {} took {}ms", part1, start_time.elapsed().as_millis());
-    } else {
-        println!("can't find path in {}ms", start_time.elapsed().as_millis());
+        
+        if i >= bytes_simulated {
+            if let Some(part1) = bfs(&grid, current_space, end_space) {
+                if i == bytes_simulated {
+                    println!("part 1 - {} took {}ms", part1, start_time.elapsed().as_millis());
+                }
+            } else {
+                println!("can't find path after coord {:?} in {} bytes fallen in {} ms", coordinate[i], i, start_time.elapsed().as_millis());
+                halt = true;
+            }
+        }
+        i += 1;
     }
 }
 
-fn bfs(grid: Vec<Vec<&str>>, start: (usize, usize), end: (usize, usize)) -> Option<usize> {
+fn bfs(grid: &Vec<Vec<&str>>, start: (usize, usize), end: (usize, usize)) -> Option<usize> {
     let rows = grid.len();
     let cols = grid[0].len();
 
