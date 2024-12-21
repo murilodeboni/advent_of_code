@@ -2,14 +2,7 @@ mod utils;
 
 use utils::input::read_lines;
 
-use std::{collections::HashMap, hash::Hash, time::Instant};
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-struct Cheat {
-    x: usize,
-    y: usize,
-    dir: (isize,isize)
-}
+use std::{collections::HashMap, time::Instant};
 
 fn main() {
     let start_time = Instant::now();
@@ -19,10 +12,7 @@ fn main() {
         .map(|line| line.chars().collect())
         .collect();
 
-    // print_grid(&grid);
-    let mut cheats: Vec<Cheat> = Vec::new();
     let mut start: (usize,usize) = (0,0);
-    let mut end: (usize,usize) = (0,0);
     
     let mut part1: usize = 0;
     let mut part2: usize = 0;
@@ -32,14 +22,11 @@ fn main() {
             if grid[i][j] == 'S' {
                 start = (i,j);
             }
-            if grid[i][j] == 'E' {
-                end = (i,j);
-            }
         }
     }
 
 
-    let (count,mut costs_without_cheat) = dfs_no_cheat(&grid, start, &mut vec![vec![false; grid[0].len()]; grid.len()], &mut HashMap::new(), &mut 0);
+    let (_,mut costs_without_cheat) = dfs_no_cheat(&grid, start, &mut vec![vec![false; grid[0].len()]; grid.len()], &mut HashMap::new(), &mut 0);
     // println!("{} {:?}",count, costs_without_cheat);
     costs_without_cheat.insert(start,0);
 
@@ -63,12 +50,12 @@ fn main() {
     }
     println!("part 1 - {} took {}", part1, start_time.elapsed().as_millis());
 
-    for ((x1,y1), c1) in &costs_without_cheat {
-        for ((x2,y2), c2) in &costs_without_cheat {
+    for ((x1, y1), c1) in &costs_without_cheat {
+        for ((x2, y2), c2) in &costs_without_cheat {
             let cheat_cost = x1.abs_diff(*x2) + y1.abs_diff(*y2);
             let cheat_saving: isize = *c2 as isize - *c1 as isize - cheat_cost as isize;
-            if cheat_saving > 0  && (x1.abs_diff(*x2) + y1.abs_diff(*y2)) <= 20 {
-                *cheat_savings_part2.entry(cheat_saving as usize).or_insert(0) += 1
+            if cheat_saving > 0 && cheat_cost <= 20 {
+                *cheat_savings_part2.entry(cheat_saving as usize).or_insert(0) += 1;
             }
         }
     }
@@ -152,6 +139,7 @@ fn cheat(
     None
 }
 
+#[allow(dead_code)]
 fn print_grid(grid: &Vec<Vec<char>>) {
     for row in grid {
         let line: String = row.iter().collect();
