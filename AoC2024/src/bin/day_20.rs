@@ -2,7 +2,7 @@ mod utils;
 
 use utils::input::read_lines;
 
-use std::{collections::HashMap, time::Instant};
+use std::{collections::HashMap, hash::Hash, time::Instant};
 
 #[derive(Eq, PartialEq, Clone, Debug)]
 struct Cheat {
@@ -12,14 +12,14 @@ struct Cheat {
 }
 
 fn main() {
-    let start = Instant::now();
-    let grid_input: Vec<String> = read_lines("./src/bin/inputs/day_20_test.txt");
+    let start_time = Instant::now();
+    let grid_input: Vec<String> = read_lines("./src/bin/inputs/day_20.txt");
     let grid: Vec<Vec<char>> = grid_input
         .iter()
         .map(|line| line.chars().collect())
         .collect();
 
-    print_grid(&grid);
+    // print_grid(&grid);
     let mut cheats: Vec<Cheat> = Vec::new();
     let mut start: (usize,usize) = (0,0);
     let mut end: (usize,usize) = (0,0);
@@ -37,8 +37,29 @@ fn main() {
         }
     }
 
-    let (count, costs_without_cheat) = dfs_no_cheat(&grid, start, &mut vec![vec![false; grid[0].len()]; grid.len()], &mut HashMap::new(), &mut 0);
-    println!("{} {:?}",count, costs_without_cheat)
+
+    let (count,mut costs_without_cheat) = dfs_no_cheat(&grid, start, &mut vec![vec![false; grid[0].len()]; grid.len()], &mut HashMap::new(), &mut 0);
+    // println!("{} {:?}",count, costs_without_cheat);
+    costs_without_cheat.insert(start,0);
+
+    // seconds saved, cheat count
+    let mut cheat_savings: HashMap<usize, usize> = HashMap::new();
+
+    let cheat_directions = [(0, 2), (0, -2), (2, 0), (-2, 0)];
+    for (pos, _) in &costs_without_cheat {
+        for dir in cheat_directions {
+            if let Some(savings) = cheat(&grid, &costs_without_cheat, pos.0, pos.1, dir.0, dir.1) {
+                *cheat_savings.entry(savings).or_insert(0) += 1
+            }
+        }
+    }
+
+    for (savings, count) in cheat_savings {
+        if savings >= 100 {
+            part1 += count;
+        }
+    }
+    println!("part 1 - {} took {}", part1, start_time.elapsed().as_millis());
 
 }
 
@@ -77,67 +98,38 @@ fn dfs_no_cheat(
     return (*count, cost.clone());
 }
 
-fn dfs(
-    grid: &Vec<Vec<char>>,
-    pos: (usize, usize),
-    visited: &mut Vec<Vec<bool>>,
-    has_cheated: Option<Cheat>,
-    cheated: &mut Vec<Cheat>,
-    count: &mut usize,
-) -> (usize, Option<Cheat>) {
+fn cheat(
+    grid: &Vec<Vec<char>>, cost: &HashMap<(usize,usize), usize>, x: usize, y: usize, dx: isize, dy: isize
+) -> Option<usize> {
+    let new_x = x as isize + dx;
+    let new_y = y as isize + dy;
 
-    let (x, y) = pos;
-    visited[x][y] = true;
+    if new_x >= 0
+        && new_y >= 0
+        && (new_x as usize) < grid.len()
+        && (new_y as usize) < grid[0].len()
+    {
+        let new_x = new_x as usize;
+        let new_y = new_y as usize;
 
-    let directions = [(0, 1), (0, -1), (1, 0), (-1, 0)];
-    let cheat_directions = [(0, 2), (0, -2), (2, 0), (-2, 0)];
+        let new_x_half = if dx > 0 {new_x-1} else if dx < 0 {new_x+1} else {new_x};
+        let new_y_half = if dy > 0 {new_y-1} else if dy < 0 {new_y+1} else {new_y};
 
-    // if has_cheated.is_none() {
-    //     for &(dx, dy) in cheat_directions.iter() {
-    //         let new_x = x as isize + dx;
-    //         let new_y = y as isize + dy;
+        let starting_cost = cost.get(&(x,y)).unwrap();
 
-    //         if new_x >= 0
-    //             && new_y >= 0
-    //             && (new_x as usize) < grid.len()
-    //             && (new_y as usize) < grid[0].len()
-    //         {
-    //             let new_x = new_x as usize;
-    //             let new_y = new_y as usize;
-
-    //             let new_x_half = if dx > 0 {new_x-1} else if dx < 0 {new_x+1} else {new_x};
-    //             let new_y_half = if dy > 0 {new_y-1} else if dy < 0 {new_y+1} else {new_y};
-
-    //             if !visited[new_x][new_y] && has_cheated.is_none() && grid[new_x_half][new_y_half] == '#' && !cheated.contains(&Cheat{x: new_x, y: new_y, dir: (dx,dy)}) && grid[new_x][new_y] == '.' {
-    //                 println!("cheated jumping from {:?} to {:?} above the wall {:?}", (x,y), (new_x,new_y), (new_x_half, new_y_half));
-    //                 let cheat = Cheat{x: new_x, y: new_y, dir: (dx,dy)};
-    //                 cheated.push(cheat.clone());
-    //                 *count += 2;
-    //                 dfs(grid, (new_x, new_y), visited, Some(cheat), cheated, count);
-    //             }
-    //         }
-    //     }
-    // } else {
-        for &(dx, dy) in directions.iter() {
-            let new_x = x as isize + dx;
-            let new_y = y as isize + dy;
-
-            if new_x >= 0
-                && new_y >= 0
-                && (new_x as usize) < grid.len()
-                && (new_y as usize) < grid[0].len()
-            {
-                let new_x = new_x as usize;
-                let new_y = new_y as usize;
-
-                if !visited[new_x][new_y] && (grid[new_x][new_y] == '.'|| grid[new_x][new_y] == 'E') {
-                    *count += 1;
-                    dfs(grid, (new_x, new_y), visited, has_cheated.clone(), cheated, count);
+        if grid[new_x_half][new_y_half] == '#' && (grid[new_x][new_y] == '.' || grid[new_x][new_y] == 'E') {
+            if let Some(new_cost) = cost.get(&(new_x, new_y)) {
+                // println!("cheated jumping from {:?} ({}) to {:?}({}) above the wall {:?}", (x,y), starting_cost, (new_x,new_y), new_cost, (new_x_half, new_y_half));
+                if new_cost >= &(starting_cost + 2) {
+                    return Some(new_cost.saturating_sub(starting_cost + 2))
                 }
+            } else {
+                return None
             }
         }
-    // }
-    return (*count, has_cheated);
+    }
+
+    None
 }
 
 fn print_grid(grid: &Vec<Vec<char>>) {
