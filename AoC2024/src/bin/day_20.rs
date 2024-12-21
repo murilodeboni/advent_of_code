@@ -2,14 +2,7 @@ mod utils;
 
 use utils::input::read_lines;
 
-use std::{collections::HashMap, hash::Hash, time::Instant};
-
-#[derive(Eq, PartialEq, Clone, Debug)]
-struct Cheat {
-    x: usize,
-    y: usize,
-    dir: (isize,isize)
-}
+use std::{collections::HashMap, time::Instant};
 
 fn main() {
     let start_time = Instant::now();
@@ -19,10 +12,7 @@ fn main() {
         .map(|line| line.chars().collect())
         .collect();
 
-    // print_grid(&grid);
-    let mut cheats: Vec<Cheat> = Vec::new();
     let mut start: (usize,usize) = (0,0);
-    let mut end: (usize,usize) = (0,0);
     
     let mut part1: usize = 0;
     
@@ -31,14 +21,11 @@ fn main() {
             if grid[i][j] == 'S' {
                 start = (i,j);
             }
-            if grid[i][j] == 'E' {
-                end = (i,j);
-            }
         }
     }
 
 
-    let (count,mut costs_without_cheat) = dfs_no_cheat(&grid, start, &mut vec![vec![false; grid[0].len()]; grid.len()], &mut HashMap::new(), &mut 0);
+    let (_,mut costs_without_cheat) = dfs_no_cheat(&grid, start, &mut vec![vec![false; grid[0].len()]; grid.len()], &mut HashMap::new(), &mut 0);
     // println!("{} {:?}",count, costs_without_cheat);
     costs_without_cheat.insert(start,0);
 
@@ -59,7 +46,7 @@ fn main() {
             part1 += count;
         }
     }
-    println!("part 1 - {} took {}", part1, start_time.elapsed().as_millis());
+    println!("part 1 - {} took {}ms", part1, start_time.elapsed().as_millis());
 
 }
 
