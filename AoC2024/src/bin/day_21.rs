@@ -9,6 +9,19 @@ struct Pad {
     curr: (usize,usize)
 }
 
+impl Default for Pad {
+    fn default() -> Pad {
+        Pad {
+            grid: vec![
+                vec!['#','^','A'],
+                vec!['<','v','>']
+            ],
+            curr: (0,2)
+        }
+    }
+
+}
+
 impl Pad {
     fn initNumPad(&mut self) {
         self.grid = vec![
@@ -18,13 +31,6 @@ impl Pad {
             vec!['#','0','A']
         ];
         self.curr = (3,2);
-    }
-    fn initDirPad(&mut self) {
-        self.grid = vec![
-            vec!['#','^','A'],
-            vec!['<','v','>']
-        ];
-        self.curr = (0,2);
     }
 
     fn parse_command(&mut self, command: Vec<char>) -> Vec<char> {
@@ -60,14 +66,12 @@ fn main() {
 
     let mut part1 = 0;
 
-    let mut robot1Num = Pad{grid: Vec::new(), curr: (0,0)};
+    let mut robot1Num = Pad::default();
     robot1Num.initNumPad();
 
-    let mut robot1Dir = Pad{grid: Vec::new(), curr: (0,0)};
-    robot1Dir.initDirPad();
+    let mut robot1Dir = Pad::default();
     
-    let mut robot2Dir = Pad{grid: Vec::new(), curr: (0,0)};
-    robot2Dir.initDirPad();
+    let mut robot2Dir = Pad::default();
 
     for command in commands {
         let l1 = robot1Num.parse_command(command.clone());
