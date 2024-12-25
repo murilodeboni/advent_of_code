@@ -1,181 +1,143 @@
 mod utils;
 
-use std::collections::HashMap;
+use std::{collections::{HashMap, VecDeque}, hash::Hash};
 
 use utils::input::read_lines;
 
-#[derive(Clone)]
-struct Key {
-    position: (usize, usize)
+struct Pad {
+    grid: Vec<Vec<char>>,
+    curr: (usize,usize)
 }
 
-#[derive(Clone)]
-struct KeyPad {
-    current: char,
-    dists: HashMap<(char,char), String>
-}
-
-impl KeyPad {
-    fn reset(&mut self) {
-        self.current = 'A'
+impl Pad {
+    fn initNumPad(&mut self) {
+        self.grid = vec![
+            vec!['7','8','9'],
+            vec!['4','5','6'],
+            vec!['1','2','3'],
+            vec!['#','0','A']
+        ];
+        self.curr = (3,2);
+    }
+    fn initDirPad(&mut self) {
+        self.grid = vec![
+            vec!['#','^','A'],
+            vec!['<','v','>']
+        ];
+        self.curr = (0,2);
     }
 
-    fn invert(&self, ch: char) -> char {
-        match ch {
-            '^' => 'v',
-            'v' => '^',
-            '<' => '>',
-            '>' => '<',
-            _ => ch
+    fn parse_command(&mut self, command: Vec<char>) -> Vec<char> {
+        let mut ans: Vec<char> = Vec::new();
+        for c in command {
+            let mut path = self.goto(c);
+            self.reaplce_curr(c);
+            ans.append(&mut path);
+        }
+        ans
+    }
+
+    fn goto(&mut self, end: char) -> Vec<char> {
+        let mut ans = bfs(&self.grid, self.curr, end);
+        ans.push('A');
+        return ans
+    }
+
+    fn reaplce_curr(&mut self, c: char) {
+        for i in 0..self.grid.len() {
+            for j in 0..self.grid[0].len() {
+                if self.grid[i][j] == c {
+                    self.curr = (i,j);
+                }
+            }
         }
     }
-
-    fn invert_and_mirror(&self, s: &str) -> String {
-        s.chars()
-            .rev()
-            .map(|c| self.invert(c))
-            .collect()
-    }
-    
-    fn get_expanded(&self, a: char, b: char) -> String {
-        if let Some(val) = self.dists.get(&(a, b)) {
-            return val.clone()
-        } else if let Some(val) = self.dists.get(&(b, a)) {
-            return self.invert_and_mirror(val)
-        } else if a == b {
-            return String::new();
-        } else {
-            println!("PROBLEM {} {}", a,b);
-            return String::new();
-        }
-    }
-
-    fn dist(&self, c: char) -> String {
-        self.get_expanded(self.current, c)
-    }
-
-    fn type_command(&mut self, input: Vec<char>) -> String {
-        let mut s = "".to_owned();
-        for c in input {
-            s.push_str(&self.dist(c));
-            s.push_str("A");
-            self.current = c;
-        }
-        s
-    }
-}
-
-fn vec_to_number(chars: &Vec<char>) -> usize {
-    let numeric_str: String = chars
-        .into_iter()
-        .filter(|c| c.is_digit(10)) // Keep only numeric characters
-        .collect();
-
-    numeric_str.parse::<usize>().ok().unwrap()
 }
 
 fn main() {
-    let mut numberPad = KeyPad{
-        current: 'A',
-        dists: HashMap::from([
-            (('A','0'), "<".to_string()),
-            (('A','1'), "^<<".to_string()),
-            (('A','2'), "^<".to_string()),
-            (('A','3'), "^".to_string()),
-            (('A','4'), "<<^^".to_string()),
-            (('A','5'), "^^<".to_string()),
-            (('A','6'), "^^".to_string()),
-            (('A','7'), "<<^^^".to_string()),
-            (('A','8'), "^^^<".to_string()),
-            (('A','9'), "^^^".to_string()),
-            (('0','1'), "^<".to_string()),
-            (('0','2'), "^".to_string()),
-            (('0','3'), "^>".to_string()),
-            (('0','4'), "^^<".to_string()),
-            (('0','5'), "^^".to_string()),
-            (('0','6'), "^^>".to_string()),
-            (('0','7'), "^^^<".to_string()),
-            (('0','8'), "^^^".to_string()),
-            (('0','9'), "^^^>".to_string()),
-            (('1','2'), ">".to_string()),
-            (('1','3'), ">>".to_string()),
-            (('1','4'), "^".to_string()),
-            (('1','5'), "^>".to_string()),
-            (('1','6'), "^>>".to_string()),
-            (('1','7'), "^^".to_string()),
-            (('1','8'), "^^>".to_string()),
-            (('1','9'), "^^>>".to_string()),
-            (('2','3'), ">".to_string()),
-            (('2','4'), "^<".to_string()),
-            (('2','5'), "^".to_string()),
-            (('2','6'), "^>".to_string()),
-            (('2','7'), "^^<".to_string()),
-            (('2','8'), "^^".to_string()),
-            (('2','9'), "^^>".to_string()),
-            (('3','4'), "^<<".to_string()),
-            (('3','5'), "^<".to_string()),
-            (('3','6'), "^".to_string()),
-            (('3','7'), "<<^^".to_string()),
-            (('3','8'), "^^<".to_string()),
-            (('3','9'), "^^".to_string()),
-            (('4','5'), ">".to_string()),
-            (('4','6'), ">>".to_string()),
-            (('4','7'), "^".to_string()),
-            (('4','8'), "^>".to_string()),
-            (('4','9'), "^>>".to_string()),
-            (('5','6'), ">".to_string()),
-            (('5','7'), "^<".to_string()),
-            (('5','8'), "^".to_string()),
-            (('5','9'), "^>".to_string()),
-            (('6','7'), "^<<".to_string()),
-            (('6','8'), "^<".to_string()),
-            (('6','9'), "^".to_string()),
-            (('7','8'), ">".to_string()),
-            (('7','9'), ">>".to_string()),
-            (('8','9'), ">".to_string())
-        ])
-    };
-
-    let mut directionalPad = KeyPad{
-        current:'A',
-        dists: HashMap::from([
-            (('A','>'), "v".to_string()),
-            (('A','v'), "v<".to_string()),
-            (('A','<'), "v<<".to_string()),
-            (('A','^'), "<".to_string()),
-            (('>','v'), "<".to_string()),
-            (('>','<'), "<<".to_string()),
-            (('>','^'), "^<".to_string()),
-            (('v','<'), "<".to_string()),
-            (('v','^'), "^".to_string()),
-            (('<','^'), ">^".to_string()),
-        ])
-    };
-
-    let mut directionalPad2 = directionalPad.clone();
-
-    let input = read_lines("./src/bin/inputs/day_21.txt");
+    let input = read_lines("./src/bin/inputs/day_21_test.txt");
     let commands: Vec<Vec<char>> = input.iter().map(|s| s.chars().collect()).collect();
 
     let mut part1 = 0;
 
-    for command in commands {
-        let n = vec_to_number(&command);
-        println!("{:?}", command);
-        // numberPad.reset();
-        // directionalPad.reset();
-        // directionalPad2.reset();
+    let mut robot1Num = Pad{grid: Vec::new(), curr: (0,0)};
+    robot1Num.initNumPad();
 
-        println!("{} {} {}", numberPad.current, directionalPad.current, directionalPad2.current);
-        let level1 = numberPad.type_command(command);
-        println!("{:?}", level1);
-        let level2 = directionalPad.type_command(level1.chars().collect());
-        println!("{:?}", level2);
-        let level3 = directionalPad2.type_command(level2.chars().collect());
-        part1 += n*level3.len();
-        println!("{} {} {}", level3.len(), n, level3);
+    let mut robot1Dir = Pad{grid: Vec::new(), curr: (0,0)};
+    robot1Dir.initDirPad();
+    
+    let mut robot2Dir = Pad{grid: Vec::new(), curr: (0,0)};
+    robot2Dir.initDirPad();
+
+    for command in commands {
+        let l1 = robot1Num.parse_command(command.clone());
+        let l2 = robot1Dir.parse_command(l1);
+        let l3 = robot1Dir.parse_command(l2);
+        println!("{} {} {}", vec_char_to_str(command), l3.len(), vec_char_to_str(l3));
     }
 
     println!("{}", part1)
 
+}
+
+fn bfs(grid: &Vec<Vec<char>>, start: (usize, usize), end: char) -> Vec<char> {
+    let rows = grid.len();
+    let cols = grid[0].len();
+
+    let directions = [(0, 1), (1, 0), (0, -1), (-1, 0)];
+    let dirMap: HashMap<(isize, isize), char> = HashMap::from([
+        ((0, 1),'>'),
+        ((1, 0),'^'),
+        ((0, -1),'<'),
+        ((-1, 0),'v')
+    ]);
+    let mut visited = vec![vec![false; cols]; rows];
+
+    let mut queue = VecDeque::new();
+
+    // Start BFS
+    queue.push_back((start, Vec::new()));
+    visited[start.0][start.1] = true;
+
+    while let Some(((x, y), path)) = queue.pop_front() {
+        if grid[x][y] == end {
+            return path;
+        }
+
+        // Explore neighbors
+        for (dx, dy) in &directions {
+            let new_x = x as isize + dx;
+            let new_y = y as isize + dy;
+
+            // Check if the neighbor is within bounds
+            if new_x >= 0
+                && new_y >= 0
+                && new_x < rows as isize
+                && new_y < cols as isize
+            {
+                let (new_x, new_y) = (new_x as usize, new_y as usize);
+
+                // Check if the cell is free and not visited
+                if grid[new_x][new_y] != '#' && !visited[new_x][new_y] {
+                    visited[new_x][new_y] = true;
+                    let mut new_path = path.clone();
+                    new_path.push(*dirMap.get(&(*dx,*dy)).unwrap());
+                    queue.push_back(((new_x, new_y), new_path));
+                }
+            }
+        }
+    }
+    Vec::new()
+}
+
+
+fn vec_char_to_str(v: Vec<char>) -> String {
+    let vs:Vec<String> = v.iter().map(|c|c.to_string()).collect();
+    return vs.concat()
+}
+
+fn print_grid(grid: &Vec<Vec<&str>>) {
+    for j in 0..grid.len() {
+        println!("{}", grid[j].concat())
+    }
 }
