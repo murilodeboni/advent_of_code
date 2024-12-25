@@ -1,147 +1,114 @@
-mod utils;
+// Adapted from logic described in https://observablehq.com/@jwolondon/advent-of-code-2024-day-21
 
-use std::{collections::{HashMap, VecDeque}, hash::Hash};
+mod utils;
 
 use utils::input::read_lines;
 
+use std::collections::HashMap;
+
+#[derive(Debug)]
 struct Pad {
-    grid: Vec<Vec<char>>,
-    curr: (usize,usize)
+    coords: HashMap<char, (usize, usize)>,
+    gap: (usize,usize),
 }
 
-impl Default for Pad {
-    fn default() -> Pad {
-        Pad {
-            grid: vec![
-                vec!['#','^','A'],
-                vec!['<','v','>']
-            ],
-            curr: (0,2)
-        }
-    }
+fn pad_lookup(pad_rows: &[&str]) -> Pad {
+    let mut coords = HashMap::new();
 
-}
+    let gap = if pad_rows.len() == 2 {
+        (0,0)
+    } else {
+        (3,0)
+    };
 
-impl Pad {
-    fn initNumPad(&mut self) {
-        self.grid = vec![
-            vec!['7','8','9'],
-            vec!['4','5','6'],
-            vec!['1','2','3'],
-            vec!['#','0','A']
-        ];
-        self.curr = (3,2);
-    }
-
-    fn parse_command(&mut self, command: Vec<char>) -> Vec<char> {
-        let mut ans: Vec<char> = Vec::new();
-        for c in command {
-            let mut path = self.goto(c);
-            self.reaplce_curr(c);
-            ans.append(&mut path);
-        }
-        ans
-    }
-
-    fn goto(&mut self, end: char) -> Vec<char> {
-        let mut ans = bfs(&self.grid, self.curr, end);
-        ans.push('A');
-        return ans
-    }
-
-    fn reaplce_curr(&mut self, c: char) {
-        for i in 0..self.grid.len() {
-            for j in 0..self.grid[0].len() {
-                if self.grid[i][j] == c {
-                    self.curr = (i,j);
-                }
+    for (row, row_str) in pad_rows.iter().enumerate() {
+        for (col, ch) in row_str.chars().enumerate() {
+            if ch != ' ' {
+                coords.insert(ch, (row, col));
             }
         }
     }
+
+    Pad { coords, gap }
+}
+fn shortest_path(key1: char, key2: char, pad: &Pad) -> String {
+    let (r1, c1) = pad.coords[&key1];
+    let (r2, c2) = pad.coords[&key2];
+
+    let mut up_down = String::new();
+    if r2 > r1 {
+        // Move down
+        up_down.push_str(&"v".repeat(r2 - r1));
+    } else {
+        // Move up
+        up_down.push_str(&"^".repeat(r1 - r2));
+    }
+
+    let mut left_right = String::new();
+    if c2 > c1 {
+        left_right.push_str(&">".repeat(c2 - c1));
+    } else {
+        left_right.push_str(&"<".repeat(c1 - c2));
+    }
+
+    if c2 > c1 && (r2, c1) != pad.gap {
+        return format!("{}{}A", up_down, left_right);
+    }
+    if (r1, c2) != pad.gap {
+        return format!("{}{}A", left_right, up_down);
+    }
+    format!("{}{}A", up_down, left_right)
+}
+
+fn sequences(seq: &str, pad: &Pad) -> Vec<String> {
+    let mut paths = Vec::new();
+    let mut prev_key = 'A';
+
+    for ch in seq.chars() {
+        let path = shortest_path(prev_key, ch, pad);
+        paths.push(path);
+        prev_key = ch;
+    }
+    paths
+}
+
+fn part1(codes: Vec<&str>) -> i32 {
+    let numeric_pad = pad_lookup(&["789", "456", "123", " 0A"]);
+    let dir_pad = pad_lookup(&[" ^A", "<v>"]);
+
+    let r1_seqs: Vec<String> = codes
+        .iter()
+        .map(|code| sequences(code, &numeric_pad).join(""))
+        .collect();
+
+    let r2_seqs: Vec<String> = r1_seqs
+        .iter()
+        .map(|seq| sequences(seq, &dir_pad).join(""))
+        .collect();
+
+    let r3_seqs: Vec<String> = r2_seqs
+        .iter()
+        .map(|seq| sequences(seq, &dir_pad).join(""))
+        .collect();
+
+    let mut total = 0;
+    for (i, seq) in r3_seqs.iter().enumerate() {
+        let code = codes[i];
+        if code.len() > 1 {
+            let prefix = &code[..(code.len() - 1)];
+            if let Ok(num) = prefix.parse::<i32>() {
+                total += (seq.len() as i32) * num;
+            }
+        }
+    }
+
+    total
 }
 
 fn main() {
-    let input = read_lines("./src/bin/inputs/day_21_test.txt");
-    let commands: Vec<Vec<char>> = input.iter().map(|s| s.chars().collect()).collect();
+    let input = read_lines("./src/bin/inputs/day_21.txt");
+    let commands: Vec<&str> = input.iter().map(|s| s.as_str()).collect();
 
-    let mut part1 = 0;
-
-    let mut robot1Num = Pad::default();
-    robot1Num.initNumPad();
-
-    let mut robot1Dir = Pad::default();
-    
-    let mut robot2Dir = Pad::default();
-
-    for command in commands {
-        let l1 = robot1Num.parse_command(command.clone());
-        let l2 = robot1Dir.parse_command(l1);
-        let l3 = robot1Dir.parse_command(l2);
-        println!("{} {} {}", vec_char_to_str(command), l3.len(), vec_char_to_str(l3));
-    }
-
+    let part1 = part1(commands);
     println!("{}", part1)
-
-}
-
-fn bfs(grid: &Vec<Vec<char>>, start: (usize, usize), end: char) -> Vec<char> {
-    let rows = grid.len();
-    let cols = grid[0].len();
-
-    let directions = [(0, 1), (1, 0), (0, -1), (-1, 0)];
-    let dirMap: HashMap<(isize, isize), char> = HashMap::from([
-        ((0, 1),'>'),
-        ((1, 0),'^'),
-        ((0, -1),'<'),
-        ((-1, 0),'v')
-    ]);
-    let mut visited = vec![vec![false; cols]; rows];
-
-    let mut queue = VecDeque::new();
-
-    // Start BFS
-    queue.push_back((start, Vec::new()));
-    visited[start.0][start.1] = true;
-
-    while let Some(((x, y), path)) = queue.pop_front() {
-        if grid[x][y] == end {
-            return path;
-        }
-
-        // Explore neighbors
-        for (dx, dy) in &directions {
-            let new_x = x as isize + dx;
-            let new_y = y as isize + dy;
-
-            // Check if the neighbor is within bounds
-            if new_x >= 0
-                && new_y >= 0
-                && new_x < rows as isize
-                && new_y < cols as isize
-            {
-                let (new_x, new_y) = (new_x as usize, new_y as usize);
-
-                // Check if the cell is free and not visited
-                if grid[new_x][new_y] != '#' && !visited[new_x][new_y] {
-                    visited[new_x][new_y] = true;
-                    let mut new_path = path.clone();
-                    new_path.push(*dirMap.get(&(*dx,*dy)).unwrap());
-                    queue.push_back(((new_x, new_y), new_path));
-                }
-            }
-        }
-    }
-    Vec::new()
-}
-
-
-fn vec_char_to_str(v: Vec<char>) -> String {
-    let vs:Vec<String> = v.iter().map(|c|c.to_string()).collect();
-    return vs.concat()
-}
-
-fn print_grid(grid: &Vec<Vec<&str>>) {
-    for j in 0..grid.len() {
-        println!("{}", grid[j].concat())
-    }
 }
