@@ -20,17 +20,14 @@ impl SecretNumber {
         self.value = self.value % 16777216;
     }
     fn next(&mut self) {
-        // step 1
         let s1 = self.value * 64;
         self.mix(s1);
         self.prune();
 
-        //step 2
         let s2 = self.value / 32;
         self.mix(s2);
         self.prune();
 
-        //step 3
         let s3 = self.value * 2048;
         self.mix(s3);
         self.prune();
@@ -65,12 +62,10 @@ fn main() {
     let mut changes: Vec<HashMap<(isize,isize,isize,isize),usize>> = Vec::new();
 
     for secret in secrets {
-        // println!("starting to calculate 2000th element for {}", secret);
         let mut secret_number = SecretNumber{value: secret, last_digits: Vec::new(), price_changes: HashMap::new()};
         secret_number.add_last_digit();
         let mut i = 0;
         while i < 2000 {
-            // println!("Nø {} - {}, last digit {}", i, secret_number.value, secret_number.last_digit());
             secret_number.next();
             i += 1;
         }
