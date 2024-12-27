@@ -2,10 +2,12 @@ mod utils;
 
 use utils::input::read_lines;
 
-use std::time::Instant;
+use std::{collections::HashMap, time::Instant};
 
 struct SecretNumber{
-    value: usize
+    value: usize,
+    last_digits: Vec<usize>,
+    price_changes: HashMap<(isize,isize,isize,isize),usize>
 }
 
 impl SecretNumber {
@@ -32,6 +34,26 @@ impl SecretNumber {
         let s3 = self.value * 2048;
         self.mix(s3);
         self.prune();
+
+        self.add_last_digit();
+    }
+
+    fn add_last_digit(&mut self) {
+        self.last_digits.push(self.value % 10);
+    }
+
+    fn find_change_seqs(&mut self) {
+        let mut i = 4;
+        while i < self.last_digits.len() {
+            let key: (isize,isize,isize,isize) = (
+                self.last_digits[i] as isize - self.last_digits[i-1] as isize,
+                self.last_digits[i-1] as isize - self.last_digits[i-2] as isize,
+                self.last_digits[i-2] as isize - self.last_digits[i-3] as isize,
+                self.last_digits[i-3] as isize - self.last_digits[i-4] as isize
+            );
+            self.price_changes.entry(key).or_insert(self.last_digits[i]);
+            i += 1;
+        }
     }
 }
 
@@ -40,26 +62,46 @@ fn main() {
     let secrets: Vec<usize> = read_lines("./src/bin/inputs/day_22.txt").iter().map(|s| s.parse().expect("error")).collect();
 
     let mut part1: usize  = 0;
-
-    let mut test_mix = SecretNumber{value: 42};
-    test_mix.mix(15);
-    println!("mixing works - {:?}", test_mix.value == 37);
-
-    let mut test_prune = SecretNumber{value: 100000000};
-    test_prune.prune();
-    println!("pruning works - {}", test_prune.value == 16113920);
+    let mut changes: Vec<HashMap<(isize,isize,isize,isize),usize>> = Vec::new();
 
     for secret in secrets {
-        println!("starting to calculate 2000th element for {}", secret);
-        let mut secret_number = SecretNumber{value: secret};
+        // println!("starting to calculate 2000th element for {}", secret);
+        let mut secret_number = SecretNumber{value: secret, last_digits: Vec::new(), price_changes: HashMap::new()};
+        secret_number.add_last_digit();
         let mut i = 0;
         while i < 2000 {
+            // println!("Nø {} - {}, last digit {}", i, secret_number.value, secret_number.last_digit());
             secret_number.next();
             i += 1;
         }
-        println!("Nø {} - {}", i, secret_number.value);
         part1 += secret_number.value;
+        secret_number.find_change_seqs();
+        changes.push(secret_number.price_changes);
     }
-    
+
     println!("part 1 - {} took {}ms", part1, start_time.elapsed().as_millis());
+    
+    let part2 = part2(changes);
+
+    println!("part 2 - {} took {}ms", part2, start_time.elapsed().as_millis());
+}
+
+fn part2(changes: Vec<HashMap<(isize,isize,isize,isize),usize>>) -> usize {
+    let mut combined: HashMap<(isize, isize, isize, isize), usize> = HashMap::new();
+
+    for change in changes {
+        for (key, value) in change {
+            *combined.entry(key).or_insert(0) += value;
+        }
+    }
+
+    let mut max_value: &usize = &0;
+
+    for (_, value) in &combined {
+        if value > &max_value {
+            max_value = value;
+        }
+    }
+
+    *max_value
 }
