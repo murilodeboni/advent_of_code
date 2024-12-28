@@ -96,7 +96,7 @@ fn bron_kerbosch(
         return;
     }
 
-    let mut p_clone = p.clone(); // Clone p to iterate over it safely
+    let p_clone = p.clone();
     for v in p_clone {
         r.insert(v.clone()); // Add v to the current clique
 
