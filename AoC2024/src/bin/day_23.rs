@@ -2,7 +2,7 @@ mod utils;
 
 use utils::input::read_lines;
 
-use std::{collections::{HashMap, HashSet}, hash::Hash, time::Instant};
+use std::{collections::{HashMap, HashSet}, time::Instant};
 
 fn main() {
     let start_time = Instant::now();
@@ -16,18 +16,18 @@ fn main() {
         connections.entry(pcs[1].to_string()).or_insert(HashSet::new()).insert(pcs[0].to_string());
     }
 
-    let mut part1: usize  = part1(&connections);
+    let part1_ans = part1(&connections);
 
-    println!("part 1 - {} took {}ms", part1, start_time.elapsed().as_millis());
+    let part2 = find_all_cliques(&connections);
 
-    let mut network  = part2(&connections);
-    let mut part2: Vec<String> = Vec::new();
-    for c in network {
-        part2.push(c);
+    let mut part2_ans: Vec<String> = Vec::new();
+    for c in part2 {
+        part2_ans.push(c);
     }
-    part2.sort();
-
-    println!("part 2 - {} took {}ms", part2.join(","), start_time.elapsed().as_millis());
+    part2_ans.sort();
+    
+    println!("part 1 - {} took {}ms", part1_ans, start_time.elapsed().as_millis());
+    println!("part 2 - {} took {}ms", part2_ans.join(","), start_time.elapsed().as_millis());
 
 }
 
@@ -60,14 +60,11 @@ fn part1(connections: &HashMap<String, HashSet<String>>) -> usize {
         if cs[0].starts_with("t") || cs[1].starts_with("t") || cs[2].starts_with("t") {
             part1 += 1;
         }
-    }
-
-    // println!("{:?}", three_way_connections);
-    
+    }    
     part1
 }
 
-fn part2(graph: &HashMap<String, HashSet<String>>) -> HashSet<String> {
+fn find_all_cliques(graph: &HashMap<String, HashSet<String>>) -> HashSet<String> {
     let mut cliques = Vec::new();
     let mut p: HashSet<_> = graph.keys().cloned().collect();
     let mut r = HashSet::new();
@@ -75,8 +72,15 @@ fn part2(graph: &HashMap<String, HashSet<String>>) -> HashSet<String> {
 
     bron_kerbosch(graph, &mut r, &mut p, &mut x, &mut cliques);
 
-    // Find the largest clique
-    cliques.into_iter().max_by_key(|clique| clique.len()).unwrap_or_default()
+    let mut biggest_clique: HashSet<String> = HashSet::new();
+
+    for clique in cliques {
+        if &clique.len() > &biggest_clique.len() && &clique.len() >= &3 {
+            biggest_clique = clique.clone();
+        }
+    }
+
+    biggest_clique
 }
 
 fn bron_kerbosch(
@@ -89,24 +93,24 @@ fn bron_kerbosch(
     if p.is_empty() && x.is_empty() {
         // Found a maximal clique
         cliques.push(r.clone());
-    } else {
-        let pivot = p.union(x).next().unwrap().clone(); // Choose a pivot
-        let mut p_without_neighbors: HashSet<_> = p.difference(&graph[&pivot]).cloned().collect();
+        return;
+    }
 
-        for v in p_without_neighbors {
-            // Add v to the current clique
-            r.insert(v.clone());
+    let mut p_clone = p.clone(); // Clone p to iterate over it safely
+    for v in p_clone {
+        r.insert(v.clone()); // Add v to the current clique
 
-            // Recur with neighbors of v
-            let neighbors = &graph[&v];
-            let mut p_intersection: HashSet<_> = p.intersection(neighbors).cloned().collect();
-            let mut x_intersection: HashSet<_> = x.intersection(neighbors).cloned().collect();
-            bron_kerbosch(graph, r, &mut p_intersection, &mut x_intersection, cliques);
+        // Compute new p and x: intersection with neighbors of v
+        let neighbors = graph.get(&v).unwrap();
+        let mut new_p: HashSet<_> = p.intersection(neighbors).cloned().collect();
+        let mut new_x: HashSet<_> = x.intersection(neighbors).cloned().collect();
 
-            // Backtrack
-            r.remove(&v);
-            p.remove(&v);
-            x.insert(v);
-        }
+        // Recur with updated sets
+        bron_kerbosch(graph, r, &mut new_p, &mut new_x, cliques);
+
+        // Backtrack: remove v from r and move it from p to x
+        r.remove(&v);
+        p.remove(&v);
+        x.insert(v);
     }
 }
