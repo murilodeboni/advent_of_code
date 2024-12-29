@@ -14,7 +14,6 @@ struct Operation {
 
 impl Operation {
     fn calculate(&mut self, wires: &mut HashMap<String,u8>) {
-        // println!("w1: {}, w2: {}, wn: {}, operation: {}", self.w1, self.w2, self.wn, self.operation);
         if !wires.contains_key(&self.w1) || !wires.contains_key(&self.w2) {
             self.resolved = false;
         } else if self.operation == "AND" {
@@ -37,7 +36,7 @@ impl Operation {
 }
 
 fn binary_vec_to_number(binary_vec: Vec<&u8>) -> u64 {
-    binary_vec.iter().rev().enumerate().fold(0, |acc, (i, &bit)| {
+    binary_vec.iter().enumerate().fold(0, |acc, (i, &bit)| {
         acc + ((*bit as u64) << i)
     })
 }
@@ -75,7 +74,6 @@ fn main() {
 
     part1.sort_by(|a,b| a.0.cmp(&b.0));
     part1 = part1.into_iter().filter(|(k,_)| k.starts_with("z")).collect();
-    part1.reverse();
     let part1_ans: Vec<&u8> = part1.iter().map(|(_,v)| v).collect();
 
     println!("part 1 - {:?} took {}ms", binary_vec_to_number(part1_ans), start_time.elapsed().as_millis());
