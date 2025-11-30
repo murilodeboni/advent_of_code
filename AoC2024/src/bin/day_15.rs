@@ -2,14 +2,15 @@ mod utils;
 
 use utils::input::read_lines;
 
-use std::{collections::HashMap, time::Instant};
+use std::{collections::{HashMap, HashSet, VecDeque}, time::Instant};
 
 fn main() {
     let start = Instant::now();
     let grid_input: Vec<String> = read_lines("./src/bin/inputs/day_15_1_test.txt");
     let commands_input: Vec<String> = read_lines("./src/bin/inputs/day_15_2_test.txt");
-    // let commands_input: Vec<String> = vec![">>>vvvvv".to_string()]; // TESTING
-    let grid_collect_part_1: Vec<Vec<char>> = grid_input
+    let commands: Vec<char> = commands_input.iter().flat_map(|line| line.chars()).collect();
+
+    let mut grid_part_1: Vec<Vec<char>> = grid_input
         .iter()
         .map(|line| line.chars().collect())
         .collect();
@@ -18,117 +19,177 @@ fn main() {
         s.replace("#", "##").replace(".", "..").replace("@", "@.").replace("O", "[]")
     }
 
-    let grid_collect_part_2: Vec<Vec<char>> = grid_input
+    let mut grid_part_2: Vec<Vec<char>> = grid_input
         .iter()
         .map(|line| replacements(line).chars().collect())
         .collect();
 
-    let mut grid: Vec<Vec<char>> = grid_collect_part_2;
+    let part1 = simulate_part1(&mut grid_part_1, &commands);
+    let part2 = simulate_part2(&mut grid_part_2, &commands);
 
-    print_grid(&grid);
+    println!("part 1 - {}", part1);
+    println!("part 2 - {} total time - {}ms", part2, start.elapsed().as_millis());
+}
 
-    let mut initial_position: (usize,usize) = (0,0);
+fn simulate_part1(grid: &mut Vec<Vec<char>>, commands: &[char]) -> usize {
+    let mut robot = find_robot(grid);
     let direction_map: HashMap<char, (isize, isize)> = HashMap::from([
         ('>', (0, 1)),
         ('v', (1, 0)),
         ('^', (-1, 0)),
         ('<', (0, -1)),
     ]);
-    
-    let mut part1: usize = 0;
-    let mut part2: usize = 0;
-    for i in 0..grid.len() {
-        for j in 0..grid[0].len() {
-            if grid[i][j] == '@' {
-                initial_position = (i,j);
-            }
+
+    for &command in commands {
+        if let Some(&dir) = direction_map.get(&command) {
+            move_part1(grid, &mut robot, dir);
         }
     }
 
-    for line in commands_input {
-        for command in line.chars() {
-            // println!("Processing command: '{}'", command);
-            if direction_map.contains_key(&command) {
-                let success = move_position(&mut grid, &mut initial_position, command, &direction_map);
-                // if success {
-                //     println!("Moved '{}' successfully.", command);
-                // } else {
-                //     println!("Failed to move '{}' due to obstacle.", command);
-                // }
-                // print_grid(&grid);
-            } else {
-                // println!("Unknown command: '{}'", command);
-            }
-        }
-    }
-    
-    print_grid(&grid);
-    // println!("{:?}", initial_position);
-
-    let part1 = box_coordinates_sum(&grid);
-
-    println!("part 1 - {} total time - {}ms", part1, start.elapsed().as_millis());
+    gps_sum(grid, 'O')
 }
 
-fn move_position(
-    grid: &mut Vec<Vec<char>>,
-    position: &mut (usize, usize),
-    direction: char,
-    direction_map: &HashMap<char, (isize, isize)>,
-) -> bool {
-    // Get movement offsets
-    let to = direction_map.get(&direction).unwrap();
+fn simulate_part2(grid: &mut Vec<Vec<char>>, commands: &[char]) -> usize {
+    let mut robot = find_robot(grid);
+    let direction_map: HashMap<char, (isize, isize)> = HashMap::from([
+        ('>', (0, 1)),
+        ('v', (1, 0)),
+        ('^', (-1, 0)),
+        ('<', (0, -1)),
+    ]);
 
-    // Calculate new position with boundary checks
-    let new_i = (position.0 as isize + to.0) as usize;
-    let new_j = (position.1 as isize + to.1) as usize;
+    for &command in commands {
+        if let Some(&dir) = direction_map.get(&command) {
+            move_part2(grid, &mut robot, dir);
+        }
+    }
 
-    // Ensure new_i and new_j are within grid bounds
-    if new_i >= grid.len()-1 || new_j >= grid[0].len()-1 || new_i <= 0 || new_j <= 0 {
-        // println!("Move into wall: ({}, {})", new_i, new_j);
+    gps_sum(grid, '[')
+}
+
+fn move_part1(grid: &mut Vec<Vec<char>>, position: &mut (usize, usize), direction: (isize, isize)) -> bool {
+    let rows = grid.len() as isize;
+    let cols = grid[0].len() as isize;
+    let mut target_i = position.0 as isize + direction.0;
+    let mut target_j = position.1 as isize + direction.1;
+
+    while target_i >= 0 && target_i < rows && target_j >= 0 && target_j < cols {
+        match grid[target_i as usize][target_j as usize] {
+            '#' => return false,
+            '.' => break,
+            _ => {
+                target_i += direction.0;
+                target_j += direction.1;
+            }
+        }
+    }
+
+    if target_i < 0 || target_i >= rows || target_j < 0 || target_j >= cols {
         return false;
     }
 
-    let target_cell = grid[new_i][new_j];
-
-    // Current cell content
-    let original = grid[position.0][position.1];
-
-    if target_cell == '.' {
-        // println!("Moving into empty space at ({}, {}).", new_i, new_j);
-        grid[position.0][position.1] = '.'; // Clear original position
-        grid[new_i][new_j] = original; // Move player to new position
-        *position = (new_i, new_j); // Update player's position
-        true
-    } else if target_cell == 'O' {
-        // println!("Encountered rock at ({}, {}). Attempting to push.", new_i, new_j);
-        // Attempt to push the rock in the same direction
-        let can_push = move_position(grid, &mut (new_i, new_j), direction, direction_map);
-        if can_push {
-            // After pushing the rock, move the player
-            grid[position.0][position.1] = '.'; // Clear original position
-            grid[new_i][new_j] = original; // Move player to new position
-            *position = (new_i, new_j); // Update player's position
-            true
-        } else {
-            // println!("Failed to push the rock at ({}, {}).", new_i, new_j);
-            false
-        }
-    } else {
-        // println!(
-        //     // "Cannot move to ({}, {}): Cell occupied by '{}'.",
-        //     new_i, new_j, target_cell
-        // );
-        false
+    let mut cur_i = target_i;
+    let mut cur_j = target_j;
+    while cur_i != position.0 as isize || cur_j != position.1 as isize {
+        let prev_i = cur_i - direction.0;
+        let prev_j = cur_j - direction.1;
+        grid[cur_i as usize][cur_j as usize] = grid[prev_i as usize][prev_j as usize];
+        cur_i = prev_i;
+        cur_j = prev_j;
     }
+
+    grid[position.0][position.1] = '.';
+    position.0 = (position.0 as isize + direction.0) as usize;
+    position.1 = (position.1 as isize + direction.1) as usize;
+    grid[position.0][position.1] = '@';
+    true
 }
 
-fn box_coordinates_sum(grid: &Vec<Vec<char>>) -> usize {
+fn move_part2(grid: &mut Vec<Vec<char>>, position: &mut (usize, usize), direction: (isize, isize)) -> bool {
+    if direction.0 == 0 {
+        return move_part1(grid, position, direction);
+    }
+
+    let start_i = position.0 as isize + direction.0;
+    let start_j = position.1 as isize + direction.1;
+    let rows = grid.len() as isize;
+    let cols = grid[0].len() as isize;
+
+    if start_i < 0 || start_i >= rows || start_j < 0 || start_j >= cols {
+        return false;
+    }
+
+    let mut queue = VecDeque::new();
+    let mut boxes = Vec::new();
+    let mut seen = HashSet::new();
+
+    queue.push_back((start_i as usize, start_j as usize));
+
+    while let Some((i, j)) = queue.pop_front() {
+        match grid[i][j] {
+            '.' => continue,
+            '#' => return false,
+            '[' => {
+                if seen.insert((i, j)) {
+                    boxes.push((i, j));
+                    let next_i = i as isize + direction.0;
+                    if next_i < 0 || next_i >= rows {
+                        return false;
+                    }
+                    queue.push_back((next_i as usize, j));
+                    queue.push_back((next_i as usize, j + 1));
+                }
+            }
+            ']' => {
+                let left = j - 1;
+                if seen.insert((i, left)) {
+                    boxes.push((i, left));
+                    let next_i = i as isize + direction.0;
+                    if next_i < 0 || next_i >= rows {
+                        return false;
+                    }
+                    queue.push_back((next_i as usize, left));
+                    queue.push_back((next_i as usize, left + 1));
+                }
+            }
+            _ => {}
+        }
+    }
+
+    for &(i, j) in &boxes {
+        grid[i][j] = '.';
+        grid[i][j + 1] = '.';
+    }
+
+    for &(i, j) in &boxes {
+        let next_i = (i as isize + direction.0) as usize;
+        grid[next_i][j] = '[';
+        grid[next_i][j + 1] = ']';
+    }
+
+    grid[position.0][position.1] = '.';
+    position.0 = (position.0 as isize + direction.0) as usize;
+    grid[position.0][position.1] = '@';
+    true
+}
+
+fn find_robot(grid: &Vec<Vec<char>>) -> (usize, usize) {
+    for i in 0..grid.len() {
+        for j in 0..grid[0].len() {
+            if grid[i][j] == '@' {
+                return (i, j);
+            }
+        }
+    }
+    (0, 0)
+}
+
+fn gps_sum(grid: &Vec<Vec<char>>, target: char) -> usize {
     let mut ans = 0;
     for i in 0..grid.len() {
         for j in 0..grid[0].len() {
-            if grid[i][j] == 'O' {
-                ans += 100*i + j;
+            if grid[i][j] == target {
+                ans += 100 * i + j;
             }
         }
     }
