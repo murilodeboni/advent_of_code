@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use aoc_utils::read_input;
 
 const BASE: &str = env!("CARGO_MANIFEST_DIR");
@@ -67,11 +69,13 @@ fn main() {
 
     let dir_input: Vec<DirectionInput> = parse_input(&input);
     
+    let start = Instant::now();
     let mut dial = Dial::new();
     dir_input.iter().for_each(|di| {
         dial.turn(di.direction, di.value);
     });
+    let elapsed = start.elapsed();
 
-    println!("{DAY} part1: {}", dial.part1);
-    println!("{DAY} part2: {}", dial.part2);
+    println!("{DAY} part1: {} ({}µs)", dial.part1, elapsed.as_micros());
+    println!("{DAY} part2: {} ({}µs)", dial.part2, elapsed.as_micros());
 }
