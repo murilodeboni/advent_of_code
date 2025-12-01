@@ -11,16 +11,9 @@ pub fn read_lines_unwrap(path: impl AsRef<Path>) -> Vec<String> {
     read_lines(path).expect("failed to read input file")
 }
 
-/// Resolve the input path for a given day name (e.g., `d01`), automatically
-/// selecting the test file when running under `cargo test` . 
-/// `base_dir` should be the year crate's `CARGO_MANIFEST_DIR`, 
-/// since a library cannot know the caller's manifest.
-/// Input files are expected at `<base_dir>/src/bin/inputs/{name}.txt` and
-/// `{name}_test.txt`.
-pub fn input_path(base_dir: &str, name: &str) -> String {
+pub fn input_path(base_dir: &str, name: &str, test: bool) -> String {
     let base = format!("{base_dir}/src/bin/inputs/{name}");
-    let use_test = cfg!(test);
-    if use_test {
+    if test {
         format!("{base}_test.txt")
     } else {
         format!("{base}.txt")
@@ -28,6 +21,6 @@ pub fn input_path(base_dir: &str, name: &str) -> String {
 }
 
 /// Convenience wrapper to read the resolved input for a given day name.
-pub fn read_input(base_dir: &str, name: &str) -> Vec<String> {
-    read_lines_unwrap(input_path(base_dir, name))
+pub fn read_input(base_dir: &str, name: &str, test: bool) -> Vec<String> {
+    read_lines_unwrap(input_path(base_dir, name, test))
 }
