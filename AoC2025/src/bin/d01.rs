@@ -19,30 +19,26 @@ impl Dial {
         Dial { position: 50 , part1: 0, part2: 0 }
     }
 
-    fn turn1(&mut self, direction: char, value: i64) {
-        let initial_position = self.position.clone();
+    fn turn(&mut self, direction: char, value: i64) {
         let rest = value % 100;
-        let full_turns = value / 100;
-        self.part2 += full_turns;
-        
-        match direction {
-            'L' => self.position -= rest,
-            'R' => self.position += rest,
-            _ => panic!("Invalid direction"),
-        }
+        self.part2 += value / 100;
 
-        if self.position < 0 {
-            self.position = 100 + self.position;
-            if initial_position != 0 {
-                self.part2 += 1;
-            }
-        } 
-        
-        if self.position > 99{
-            self.position = self.position - 100;
-            if self.position != 0 {
-                self.part2 += 1;
-            }
+        let delta = match direction {
+            'L' => -rest,
+            'R' => rest,
+            _ => panic!("Invalid direction"),
+        };
+
+        let wrapped = match direction {
+            'L' => self.position != 0 && rest > self.position,
+            'R' => self.position + rest >= 100,
+            _ => unreachable!(),
+        };
+
+        self.position = (self.position + delta).rem_euclid(100);
+
+        if wrapped && self.position != 0 {
+            self.part2 += 1;
         }
 
         if self.position == 0 && rest > 0 {
@@ -73,7 +69,7 @@ fn main() {
     
     let mut dial = Dial::new();
     dir_input.iter().for_each(|di| {
-        dial.turn1(di.direction, di.value);
+        dial.turn(di.direction, di.value);
     });
 
     println!("{DAY} part1: {}", dial.part1);
