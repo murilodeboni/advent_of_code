@@ -22,8 +22,8 @@ impl Bank {
 
     fn max_capacity(&mut self, digits: usize, is_p2: bool) {
         let digits = digits.min(self.battery.len());
-        let mut drop = self.battery.len().saturating_sub(digits);
-        let mut stack: Vec<u32> = Vec::with_capacity(self.battery.len());
+        let mut drop = self.battery.len() - digits;
+        let mut stack: Vec<u32> = Vec::new();
 
         for &d in self.battery.iter() {
             while drop > 0 && stack.last().is_some_and(|&last| last < d) {
