@@ -1,15 +1,18 @@
-use std::collections::{HashSet, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::time::Instant;
 use aoc_utils::read_input;
 
 const BASE: &str = env!("CARGO_MANIFEST_DIR");
 const DAY: &str = "d07";
 
-
+#[derive(Clone)]
 struct TachyonManifold {
     data: Vec<Vec<char>>,
+    start: (usize, usize),
     beams: Vec<(usize, usize)>,
+    map: HashMap<(usize, usize), usize>,
     splits: usize,
+    splits2: usize,
 } 
 
 impl TachyonManifold {
@@ -22,6 +25,7 @@ impl TachyonManifold {
     }
     
     fn follow_beams(&mut self) {
+        self.beams.push(self.start);
         let mut queue: VecDeque<(usize, usize)> = VecDeque::new();
         let mut in_queue: HashSet<(usize, usize)> = HashSet::new();
 
@@ -60,6 +64,43 @@ impl TachyonManifold {
 
         self.beams = queue.into();
     }
+
+    fn multiworld_travel(&mut self) {
+        self.beams.push(self.start);
+        let mut queue: VecDeque<(usize, usize)> = VecDeque::new();
+
+        for beam in self.beams.drain(..) {
+            queue.push_back(beam);
+        }
+
+        let height = self.data.len();
+        let length = self.data[0].len();
+
+        while let Some((x, y)) = queue.pop_front() {
+
+            if y + 1 >= height {
+                continue;
+            }
+
+            let next_y = y + 1;
+
+            if self.is_split(&(x, y)) {
+                self.splits2 += 1;
+
+                if x > 0 {
+                    queue.push_back((x - 1, next_y));
+                }
+
+                if x + 1 < length {
+                    queue.push_back((x + 1, next_y));
+                }
+            } else if x < length {
+                queue.push_back((x, next_y));
+            }
+        }
+
+        self.beams = queue.into();
+    }
 }
 
 fn parse_input(input: Vec<String>) -> TachyonManifold {
@@ -77,22 +118,25 @@ fn parse_input(input: Vec<String>) -> TachyonManifold {
 
     TachyonManifold {
         data: t,
-        beams: vec![b],
+        start: b,
+        beams: Vec::new(),
         splits: 0,
+        splits2: 1,
+        map: HashMap::new(),
     }
 }
 
 fn main() {
     let start = Instant::now();
 
-    let mut part2: u128 = 0;
-
-    let input = read_input(BASE, DAY, false);
+    let input = read_input(BASE, DAY, true);
 
     let mut manifold = parse_input(input);
+
     manifold.follow_beams();
+    manifold.multiworld_travel();
 
     println!("{DAY} part1: {}", manifold.splits);
-    println!("{DAY} part2: {}", part2);
+    println!("{DAY} part2: {}", manifold.splits2);
     println!("Elapsed: {}us", start.elapsed().as_micros());
 }
