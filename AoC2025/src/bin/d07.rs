@@ -23,7 +23,7 @@ impl TachyonManifold {
         }
         false
     }
-    
+
     fn follow_beams(&mut self) {
         self.beams.push(self.start);
         let mut queue: VecDeque<(usize, usize)> = VecDeque::new();
@@ -65,41 +65,40 @@ impl TachyonManifold {
         self.beams = queue.into();
     }
 
-    fn multiworld_travel(&mut self) {
-        self.beams.push(self.start);
-        let mut queue: VecDeque<(usize, usize)> = VecDeque::new();
-
-        for beam in self.beams.drain(..) {
-            queue.push_back(beam);
+    /// Memoized count of splits/universes reachable from a position.
+    fn universes_from(&mut self, position: (usize, usize)) -> usize {
+        if let Some(&cached) = self.map.get(&position) {
+            return cached;
         }
 
+        let (x, y) = position;
         let height = self.data.len();
-        let length = self.data[0].len();
 
-        while let Some((x, y)) = queue.pop_front() {
-
-            if y + 1 >= height {
-                continue;
-            }
-
-            let next_y = y + 1;
-
-            if self.is_split(&(x, y)) {
-                self.splits2 += 1;
-
-                if x > 0 {
-                    queue.push_back((x - 1, next_y));
-                }
-
-                if x + 1 < length {
-                    queue.push_back((x + 1, next_y));
-                }
-            } else if x < length {
-                queue.push_back((x, next_y));
-            }
+        if y + 1 >= height {
+            self.map.insert(position, 0);
+            return 0;
         }
 
-        self.beams = queue.into();
+        let next_y = y + 1;
+        let width = self.data[next_y].len();
+
+        let universes = if self.is_split(&(x, y)) {
+            let left = if x > 0 { self.universes_from((x - 1, next_y)) } else { 0 };
+            let right = if x + 1 < width { self.universes_from((x + 1, next_y)) } else { 0 };
+            1 + left + right // count this split plus branches
+        } else if x < width {
+            self.universes_from((x, next_y))
+        } else {
+            0
+        };
+
+        self.map.insert(position, universes);
+        universes
+    }
+
+    fn multiworld_travel(&mut self) {
+        // Use memoized universes_from to avoid traversing every branch repeatedly.
+        self.splits2 += self.universes_from(self.start);
     }
 }
 
@@ -129,7 +128,7 @@ fn parse_input(input: Vec<String>) -> TachyonManifold {
 fn main() {
     let start = Instant::now();
 
-    let input = read_input(BASE, DAY, true);
+    let input = read_input(BASE, DAY, false);
 
     let mut manifold = parse_input(input);
 
