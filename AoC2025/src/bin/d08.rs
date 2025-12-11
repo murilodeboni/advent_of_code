@@ -1,4 +1,4 @@
-use std::collections::{BTreeSet, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::time::Instant;
 use aoc_utils::read_input;
 
@@ -76,6 +76,69 @@ fn create_circuits(edges: &[(f64, Juction, Juction)], circuits: &mut HashSet<Cir
     }
 }
 
+fn create_one_big_circuit(junctions: &[Juction]) -> (Juction, Juction) {
+    let edges = compare_juctions(junctions);
+    let mut circuits: HashSet<Circuit> = junctions
+        .iter()
+        .map(|j| {
+            let mut set = BTreeSet::new();
+            set.insert(j.clone());
+            Circuit { juctions: set }
+        })
+        .collect();
+
+    let mut remaining = circuits.len();
+
+    for (_, j1, j2) in edges {
+        let c1 = circuits.iter().find(|c| c.juctions.contains(&j1)).cloned();
+        let c2 = circuits.iter().find(|c| c.juctions.contains(&j2)).cloned();
+
+        match (c1, c2) {
+            (Some(a), Some(b)) if a == b => {
+                // already connected
+                continue;
+            }
+            (Some(a), Some(b)) => {
+                let mut merged = circuits
+                    .take(&a)
+                    .unwrap_or_else(|| Circuit { juctions: BTreeSet::new() });
+                if let Some(other) = circuits.take(&b) {
+                    merged.juctions.extend(other.juctions.into_iter());
+                }
+                circuits.insert(merged);
+                remaining -= 1;
+            }
+            (Some(a), None) => {
+                if let Some(mut circuit) = circuits.take(&a) {
+                    circuit.juctions.insert(j2.clone());
+                    circuits.insert(circuit);
+                    remaining -= 1;
+                }
+            }
+            (None, Some(b)) => {
+                if let Some(mut circuit) = circuits.take(&b) {
+                    circuit.juctions.insert(j1.clone());
+                    circuits.insert(circuit);
+                    remaining -= 1;
+                }
+            }
+            (None, None) => {
+                let mut new_circuit = Circuit { juctions: BTreeSet::new() };
+                new_circuit.juctions.insert(j1.clone());
+                new_circuit.juctions.insert(j2.clone());
+                circuits.insert(new_circuit);
+                remaining -= 1;
+            }
+        }
+
+        if remaining == 1 {
+            return (j1, j2);
+        }
+    }
+
+    panic!("Failed to connect all junctions");
+}
+
 fn parse_input(input: Vec<String>) -> Vec<Juction> {
     let mut juctions = Vec::new();
 
@@ -95,7 +158,6 @@ fn ans(circuits: &HashSet<Circuit>, n: usize) -> usize {
     let mut largest_circuits: Vec<&Circuit> = circuits.iter().collect();
     largest_circuits.sort_by_key(|c| usize::MAX - c.juctions.len());
     for circuit in largest_circuits.iter().take(n) {
-        println!("Circuit with {} juctions", circuit.juctions.len());
         total *= circuit.juctions.len();
     }
     total
@@ -103,8 +165,6 @@ fn ans(circuits: &HashSet<Circuit>, n: usize) -> usize {
 
 fn main() {
     let start = Instant::now();
-
-    let part2: usize = 0;
 
     let input = read_input(BASE, DAY, false);
 
@@ -123,7 +183,9 @@ fn main() {
 
     create_circuits(&edges, &mut circuits, 1000);
 
+    let (j1, j2) = create_one_big_circuit(&junctions);
+
     println!("{DAY} part1: {}", ans(&circuits, 3));
-    println!("{DAY} part2: {}", part2);
-    println!("Elapsed: {}us", start.elapsed().as_micros());
+    println!("{DAY} part2: {}", j1.x*j2.x);
+    println!("Elapsed: {}ms", start.elapsed().as_millis());
 }
