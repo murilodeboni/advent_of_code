@@ -1,4 +1,4 @@
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeSet, HashSet};
 use std::time::Instant;
 use aoc_utils::read_input;
 
@@ -76,17 +76,11 @@ fn create_circuits(edges: &[(f64, Juction, Juction)], circuits: &mut HashSet<Cir
     }
 }
 
-fn create_one_big_circuit(junctions: &[Juction]) -> (Juction, Juction) {
-    let edges = compare_juctions(junctions);
-    let mut circuits: HashSet<Circuit> = junctions
-        .iter()
-        .map(|j| {
-            let mut set = BTreeSet::new();
-            set.insert(j.clone());
-            Circuit { juctions: set }
-        })
-        .collect();
-
+fn create_one_big_circuit(
+    edges: &Vec<(f64, Juction, Juction)>
+    , junctions: &[Juction]
+    , circuits: &mut HashSet<Circuit>
+) -> (Juction, Juction) {
     let mut remaining = circuits.len();
 
     for (_, j1, j2) in edges {
@@ -132,7 +126,7 @@ fn create_one_big_circuit(junctions: &[Juction]) -> (Juction, Juction) {
         }
 
         if remaining == 1 {
-            return (j1, j2);
+            return (j1.clone(), j2.clone());
         }
     }
 
@@ -169,7 +163,7 @@ fn main() {
     let input = read_input(BASE, DAY, false);
 
     let junctions = parse_input(input);
-    // Start with each junction as its own circuit
+    
     let mut circuits: HashSet<Circuit> = junctions
         .iter()
         .map(|j| {
@@ -183,9 +177,12 @@ fn main() {
 
     create_circuits(&edges, &mut circuits, 1000);
 
-    let (j1, j2) = create_one_big_circuit(&junctions);
+    let part1 = ans(&circuits, 3);
 
-    println!("{DAY} part1: {}", ans(&circuits, 3));
+    let (j1, j2) = create_one_big_circuit(&edges, &junctions, &mut circuits);
+    
+    println!("{DAY} part1: {}", part1);
     println!("{DAY} part2: {}", j1.x*j2.x);
     println!("Elapsed: {}ms", start.elapsed().as_millis());
+
 }
